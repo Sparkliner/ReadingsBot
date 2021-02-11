@@ -13,7 +13,7 @@ namespace ReadingsBot.Utilities
 
         public static TimeSpan ParseTimeSpanAsUtc(string input, out string timeZone)
         {
-            string[] args = input.Split('-');
+            string[] args = input.Split('~');
             if (args.Length != 2)
                 throw new ArgumentException("Time format not recognized - check `help` command for correct format");
             TimeZoneInfo tz;

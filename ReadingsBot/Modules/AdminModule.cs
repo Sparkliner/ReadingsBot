@@ -1,9 +1,11 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Discord.Commands;
+using ReadingsBot.Extensions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using System;
 
 namespace ReadingsBot.Modules
 {
@@ -19,6 +21,32 @@ namespace ReadingsBot.Modules
         public AdminModule(GuildService guildService)
         {
             _guildService = guildService;
+        }
+        
+
+        [Command("timezones")]
+        [Summary("List valid time zone formats for the bot.")]
+        public async Task TimeZones(int page = 1)
+        {
+            page--;
+
+            if (page < 0 || page > 20)
+                return;
+
+            var timezones = TimeZoneInfo.GetSystemTimeZones()
+                .OrderBy(x => x.BaseUtcOffset)
+                .ToArray();
+            var timezonesPerPage = 20;
+
+            await Context.SendPaginatedConfirmAsync(page,
+                (curPage) => new EmbedBuilder()
+                .WithColor(_color)
+                .WithTitle("Valid Time Zone Names")
+                .WithDescription(string.Join("\n", timezones
+                    .Skip(curPage * timezonesPerPage)
+                    .Take(timezonesPerPage)
+                    .Select(x => $"{x.Id}: {x.DisplayName}"))),
+                timezones.Length, timezonesPerPage).ConfigureAwait(false);
         }
 
         [Command("setprefix")]
