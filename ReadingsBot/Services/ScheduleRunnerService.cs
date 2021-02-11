@@ -31,7 +31,7 @@ namespace ReadingsBot
 
         private void ScheduleRunnerThread_Func()
         {
-            while (true)
+            while (_client.ConnectionState != ConnectionState.Disconnecting)
             {
                 if (_client.ConnectionState != ConnectionState.Connected)
                 {
