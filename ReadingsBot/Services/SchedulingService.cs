@@ -18,7 +18,7 @@ namespace ReadingsBot
             OCALives
         }
 
-        private static string[] EventTypeDescription =
+        private static readonly string[] EventTypeDescription =
         {
             "Lives of the Saints"
         };
@@ -105,7 +105,7 @@ namespace ReadingsBot
             return EventTypeDescription[(int)eventType];
         }
 
-        private void LogException(MongoException e)
+        private static void LogException(MongoException e)
         {
             LogUtilities.WriteLog(Discord.LogSeverity.Error, e.ToString());
         }

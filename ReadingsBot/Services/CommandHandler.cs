@@ -10,19 +10,16 @@ namespace ReadingsBot
     {
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
-        private readonly IConfigurationRoot _config;
         private readonly IServiceProvider _provider;
         private readonly GuildService _guildService;
         public CommandHandler(
             DiscordSocketClient client,
             CommandService commands,
-            IConfigurationRoot config,
             IServiceProvider provider,
             GuildService guildService)
         {
             _client = client;
             _commands = commands;
-            _config = config;
             _provider = provider;
             _guildService = guildService;
 
@@ -31,7 +28,7 @@ namespace ReadingsBot
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
         {
-            if (!(s is SocketUserMessage msg)) 
+            if (s is not SocketUserMessage msg) 
                 return; //check message is from user/bot
 
             if (msg.Author.Id == _client.CurrentUser.Id) 

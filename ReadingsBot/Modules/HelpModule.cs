@@ -10,15 +10,13 @@ namespace ReadingsBot.Modules
     public class HelpModule: ModuleBase<SocketCommandContext>
     {
         private readonly CommandService _commands;
-        private readonly IConfigurationRoot _config;
         private readonly GuildService _guildService;
 
         private static readonly Color _color = new Color(114, 137, 218);
 
-        public HelpModule(CommandService commands, IConfigurationRoot config, GuildService guildService)
+        public HelpModule(CommandService commands, GuildService guildService)
         {
             _commands = commands;
-            _config = config;
             _guildService = guildService;
         }
 
@@ -46,7 +44,7 @@ namespace ReadingsBot.Modules
                 {
                     var result = await cmd.CheckPreconditionsAsync(Context);
                     if (result.IsSuccess)
-                        description += $"{prefix}{cmd.Aliases.First()}\n";
+                        description += $"{prefix}{cmd.Aliases[0]}\n";
                 }
 
                 if (!string.IsNullOrWhiteSpace(description))

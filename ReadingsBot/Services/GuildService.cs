@@ -76,7 +76,7 @@ namespace ReadingsBot
             await _guilds.UpdateOneAsync(filter, update, options);
         }
 
-        private void LogException(MongoException e)
+        private static void LogException(MongoException e)
         {
             LogUtilities.WriteLog(Discord.LogSeverity.Error, e.ToString());
         }
