@@ -5,7 +5,7 @@ Copyright (c) 2021 Felipe C. R. Miftajov
 Built using Discord.NET:
 Copyright (c) 2015-2019 Discord.Net Contributors
 
-Paginated Embed code from Nadekobot:
+Extensions from Nadekobot:
 Copyright 2021 Kwoth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
