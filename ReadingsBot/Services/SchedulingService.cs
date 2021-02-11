@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using Microsoft.Extensions.Configuration;
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ namespace ReadingsBot
 {
     public class SchedulingService
     {
+        private readonly IConfigurationRoot _config;
         private readonly IMongoClient _client;
         private readonly IMongoDatabase _database;
         private readonly IMongoCollection<Data.ScheduledEvent> _events;
@@ -21,19 +23,20 @@ namespace ReadingsBot
             "Lives of the Saints"
         };
 
-        public SchedulingService(IMongoClient client)
+        public SchedulingService(IMongoClient client, IConfigurationRoot config)
         {
+            _config = config;
             _client = client;
 
             try
             {
-                _database = client.GetDatabase("readingsbot");
+                _database = client.GetDatabase(_config["database_id"]);
                 _events = _database.GetCollection<Data.ScheduledEvent>("events");
             }
             catch (MongoException e)
             {
                 LogException(e);
-                throw e;
+                throw;
             }
         }
 

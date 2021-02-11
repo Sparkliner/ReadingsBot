@@ -18,13 +18,13 @@ namespace ReadingsBot
 
             try
             {
-                _database = client.GetDatabase("readingsbot");
+                _database = client.GetDatabase(_config["database_id"]);
                 _guilds = _database.GetCollection<Data.GuildEntity>("guilds");
             }
             catch(MongoException e)
             {
                 LogException(e);
-                throw e;
+                throw;
             }
         }
 
@@ -39,7 +39,7 @@ namespace ReadingsBot
             catch(MongoException e)
             {
                 LogException(e);
-                throw e;
+                throw;
             }
             
 
@@ -64,7 +64,7 @@ namespace ReadingsBot
             catch (MongoException e)
             {
                 LogException(e);
-                throw e;
+                throw;
             }
         }
 
