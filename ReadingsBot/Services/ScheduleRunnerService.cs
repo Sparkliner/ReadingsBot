@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Text;
 using Discord;
 using Discord.WebSocket;
@@ -21,17 +22,26 @@ namespace ReadingsBot
             _client = client;
             _schedulingService = schedulingService;
             _readingsPoster = bulkPoster;
+
+            _client.Connected += Initialize;
         }
 
-        public void Initialize()
+        public Task Initialize()
         {
-            ScheduleRunnerThread = new Thread(ScheduleRunnerThread_Func);
-            ScheduleRunnerThread.Start();
+            return Task.Run(() =>
+            {
+                if (!ScheduleRunnerThread.IsAlive)
+                {
+                    ScheduleRunnerThread = new Thread(ScheduleRunnerThread_Func);
+                    ScheduleRunnerThread.IsBackground = true;
+                    ScheduleRunnerThread.Start();
+                }
+            });
         }
 
         private void ScheduleRunnerThread_Func()
         {
-            while (_client.ConnectionState != ConnectionState.Disconnected)
+            while (true) //since thread is background this should be ok now
             {
                 if (_client.ConnectionState != ConnectionState.Connected)
                 {
@@ -75,6 +85,7 @@ namespace ReadingsBot
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"No current events found");
                 }
             }
+            //LogUtilities.WriteLog(LogSeverity.Warning, $"ScheduleRunnerThread exiting");
         }
     }
 }
