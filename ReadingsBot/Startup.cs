@@ -15,6 +15,10 @@ namespace ReadingsBot
 
         public Startup(string[] args)
         {
+            var root = System.IO.Directory.GetCurrentDirectory();
+            var dotenv = string.Join("/", root, ".env");
+            EnvironmentUtility.Load(dotenv);
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory);
             builder.AddEnvironmentVariables("READINGSBOT_");
@@ -59,6 +63,8 @@ namespace ReadingsBot
             .AddSingleton<StartupService>()
             .AddSingleton<LoggingService>()
             .AddSingleton<GuildService>()
+            .AddSingleton<OCALivesCacheService>()
+            .AddSingleton<ReadingsPostingService>()
             .AddSingleton<SchedulingService>()
             .AddSingleton<ScheduleRunnerService>();
         }

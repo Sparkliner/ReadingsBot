@@ -2,9 +2,9 @@
 using System.Web;
 using System.Globalization;
 
-namespace ReadingsBot.Modules
+namespace ReadingsBot.Utilities
 {
-    public static class ParsingUtilities
+    public static class TextUtilities
     {
         public static string ParseWebText(string input)
         {
