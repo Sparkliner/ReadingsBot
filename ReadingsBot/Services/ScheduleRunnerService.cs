@@ -44,7 +44,7 @@ namespace ReadingsBot
                 var eventresult = _schedulingService.GetCurrentEvents(DateTime.UtcNow.TimeOfDay);
                 eventresult.Wait();
                 List<Data.ScheduledEvent> currentEvents = eventresult.Result;
-                if (!(currentEvents is null))
+                if (!(currentEvents is null) && currentEvents.Any())
                 {
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"Found {currentEvents.Count} events");
                     List<Thread> ts = new List<Thread>();
@@ -69,6 +69,10 @@ namespace ReadingsBot
                         t.Start();
                     }
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"Executed all events");
+                }
+                else
+                {
+                    LogUtilities.WriteLog(LogSeverity.Verbose, $"No current events found");
                 }
             }
         }
