@@ -13,14 +13,18 @@ namespace ReadingsBot.Modules
         private readonly IConfigurationRoot _config;
         private readonly GuildService _guildService;
 
-        private readonly Color _color;
+        private static readonly Color _color = new Color(114, 137, 218);
 
         public HelpModule(CommandService commands, IConfigurationRoot config, GuildService guildService)
         {
             _commands = commands;
             _config = config;
             _guildService = guildService;
-            _color = new Color(114, 137, 218);
+        }
+
+        public static Color GetColor()
+        {
+            return _color;
         }
 
         [Command("help")]

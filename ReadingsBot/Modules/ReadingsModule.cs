@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace ReadingsBot.Modules
 {
@@ -16,19 +18,26 @@ namespace ReadingsBot.Modules
         {
             _scheduleService = scheduleService;
         }
+        public static Color GetColor()
+        {
+            return _color;
+        }
 
         [Group("lives"), Name("Lives of the Saints")]
         public class LivesModule : ModuleBase
         {
-            private static OCALives _lives;
             private readonly SchedulingService _scheduleService;
+            private readonly ReadingsPostingService _readingsPoster;
 
             private readonly string _eventString = 
                 SchedulingService.EventTypeToDescription(SchedulingService.EventType.OCALives);
 
-            public LivesModule(SchedulingService scheduleService)
+            public LivesModule(
+                SchedulingService scheduleService,
+                ReadingsPostingService bulkPoster)
             {
                 _scheduleService = scheduleService;
+                _readingsPoster = bulkPoster;
             }
 
             [Command("schedule")]
@@ -40,7 +49,7 @@ namespace ReadingsBot.Modules
                 string timeZone;
                 try
                 {
-                    ts = ParsingUtilities.ParseTimeSpanAsUtc(time, out timeZone);
+                    ts = Utilities.TextUtilities.ParseTimeSpanAsUtc(time, out timeZone);
                 }
                 catch (ArgumentException e)
                 {
@@ -61,11 +70,11 @@ namespace ReadingsBot.Modules
 
                 if (rescheduled)
                 {
-                    await ReplyAsync($"Rescheduled {_eventString} posting in this channel to {ParsingUtilities.FormatTimeLocallyAsString(ts,timeZone)} every day.");
+                    await ReplyAsync($"Rescheduled {_eventString} posting in this channel to {Utilities.TextUtilities.FormatTimeLocallyAsString(ts,timeZone)} every day.");
                 }
                 else
                 {
-                    await ReplyAsync($"Scheduled {_eventString} posting in this channel for {ParsingUtilities.FormatTimeLocallyAsString(ts, timeZone)} every day.");
+                    await ReplyAsync($"Scheduled {_eventString} posting in this channel for {Utilities.TextUtilities.FormatTimeLocallyAsString(ts, timeZone)} every day.");
                 }
 
             }
@@ -91,25 +100,8 @@ namespace ReadingsBot.Modules
             [Summary("Post today's lives of the Saints right now.")]
             public async Task Now()
             {
-                await PostLives(Context.Channel as Discord.WebSocket.ISocketMessageChannel);
+                await _readingsPoster.PostReadings(ReadingsPostingService.ReadingType.OCALives, Context.Channel.Id);
             }
-
-            public static async Task PostLives(Discord.WebSocket.ISocketMessageChannel channel)
-            {
-                //update lives
-                _lives = await OCALivesCache.GetLives();
-
-                foreach (OCALife life in _lives.commemorations)
-                {
-                    await PostLife(life, channel);
-                    await Task.Delay(2000);
-                }
-            }
-
-            private static async Task PostLife(OCALife life, Discord.WebSocket.ISocketMessageChannel channel)
-            {
-                await channel.SendMessageAsync("", false, life.ToEmbedBuilder(_color).Build());
-            } 
-        }        
+        }
     }
 }

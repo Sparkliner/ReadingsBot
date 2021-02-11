@@ -12,13 +12,15 @@ namespace ReadingsBot
     {
         private readonly DiscordSocketClient _client;
         private readonly SchedulingService _schedulingService;
+        private readonly ReadingsPostingService _readingsPoster;
 
         private Thread ScheduleRunnerThread;
 
-        public ScheduleRunnerService(DiscordSocketClient client, SchedulingService schedulingService)
+        public ScheduleRunnerService(DiscordSocketClient client, SchedulingService schedulingService, ReadingsPostingService bulkPoster)
         {
             _client = client;
             _schedulingService = schedulingService;
+            _readingsPoster = bulkPoster;
         }
 
         public void Initialize()
@@ -52,8 +54,9 @@ namespace ReadingsBot
                             switch (scheduledEvent.EventType)
                             {
                                 case SchedulingService.EventType.OCALives:
-                                    var result = Modules.ReadingsModule.LivesModule.PostLives(
-                                        _client.GetChannel(scheduledEvent.ChannelId) as ISocketMessageChannel
+                                    var result = _readingsPoster.PostReadings(
+                                        ReadingsPostingService.ReadingType.OCALives,
+                                        scheduledEvent.ChannelId
                                         );
                                     result.Wait();
                                     break;

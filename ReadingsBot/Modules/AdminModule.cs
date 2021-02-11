@@ -13,6 +13,7 @@ namespace ReadingsBot.Modules
     [Summary("Administrative commands.")]
     public class AdminModule: ModuleBase<SocketCommandContext>
     {
+        private static readonly Color _color = new Color(216, 112, 135);
         private readonly GuildService _guildService;
 
         public AdminModule(GuildService guildService)
@@ -42,8 +43,6 @@ namespace ReadingsBot.Modules
         {
             private readonly DiscordSocketClient _client;
             private readonly SchedulingService _scheduleService;
-
-            private readonly Color _color = new Color(216, 112, 135);
             
             public ScheduleModule(DiscordSocketClient client, SchedulingService scheduleService)
             {
@@ -81,7 +80,7 @@ namespace ReadingsBot.Modules
             {
                 var channel = _client.GetChannel(scheduledEvent.ChannelId) as IGuildChannel;
                 string channelName = channel.Name;
-                string time = ParsingUtilities.FormatTimeLocallyAsString(
+                string time = Utilities.TextUtilities.FormatTimeLocallyAsString(
                     scheduledEvent.GetEventTime(),
                     scheduledEvent.TimeZone
                     );
