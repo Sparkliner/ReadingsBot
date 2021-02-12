@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Linq;
 using System.Web;
 using System.Globalization;
+using System.Collections.Generic;
 
 namespace ReadingsBot.Utilities
 {
@@ -13,27 +15,53 @@ namespace ReadingsBot.Utilities
 
         public static TimeSpan ParseTimeSpanAsUtc(string input, out string timeZone)
         {
-            string[] args = input.Split('~');
-            if (args.Length != 2)
-                throw new ArgumentException("Time format not recognized - check `help` command for correct format");
+            string timeString;
+            string timeZoneString;
+            List<String> tokens = input.Trim().Split().ToList();
+
+            //assume AM/PM must be in one of first two tokens for 12hr time
+            int indexOfAmPm = IndexOfAmPm(tokens.Take(2).ToList());
+            if (indexOfAmPm > 0)
+            {
+                timeString = string.Join(" ", tokens.Take(indexOfAmPm + 1));
+                timeZoneString = string.Join(" ", tokens.Skip(indexOfAmPm + 1));
+            }
+            else
+            {
+                //assume 24 hour time
+                timeString = tokens[0];
+                timeZoneString = string.Join(" ", tokens.Skip(1));
+            }
+
             TimeZoneInfo tz;
             try
             {
-                tz = TimeZoneInfo.FindSystemTimeZoneById(args[1].Trim());
+                tz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneString);
             }
             catch (TimeZoneNotFoundException)
             {
-                throw new ArgumentException("Time zone not recognized");
+                throw new ArgumentException("Time zone or time format not recognized");
             }
             catch (ArgumentNullException)
             {
                 throw new ArgumentException("Time zone missing");
             }
-            if (!DateTime.TryParseExact(args[0].Trim(), "hh:mm tt", CultureInfo.InvariantCulture,DateTimeStyles.None,out DateTime dt))
+            if (!DateTime.TryParse(timeString, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
                 throw new ArgumentException("Time format not recognized - check `help` command for correct format");
 
             timeZone = tz.Id;
             return TimeZoneInfo.ConvertTimeToUtc(dt, tz).TimeOfDay;
+        }
+
+        private static int IndexOfAmPm(List<String> tokens)
+        {
+            //tokens: a 2-member IEnumerable of strings
+            //check first and second token for am/pm
+            //if not found return -1
+            return Math.Max(
+                tokens.FindIndex(s => s.ToLower().Contains("am")),
+                tokens.FindIndex(s => s.ToLower().Contains("pm"))
+                );
         }
 
         public static string FormatTimeLocallyAsString(TimeSpan time, string timeZone)

@@ -44,7 +44,7 @@ namespace ReadingsBot.Modules
             [Command("schedule")]
             [RequireUserPermission(GuildPermission.Administrator)]
             [Summary("Schedule the bot to post lives of the Saints at a given time of day in the channel this command is called from.")]
-            public async Task Schedule([Remainder] [Summary("Formatted as hh:mm AM/PM ~ Time zone")] string time)
+            public async Task Schedule([Remainder] [Summary("Formatted as [time] [time zone]")] string time)
             {
                 TimeSpan ts;
                 string timeZone;
