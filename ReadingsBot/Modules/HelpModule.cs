@@ -1,6 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
 using Microsoft.Extensions.Configuration;
+using ReadingsBot.Extensions;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -40,7 +43,13 @@ namespace ReadingsBot.Modules
             foreach (var module in _commands.Modules)
             {
                 string description = null;
-                foreach (var cmd in module.Commands)
+
+                List<CommandInfo> commands = module.Commands.ToList()
+                    .OrderBy(c => c.Aliases[0])
+                    .Distinct(new CommandInfoEqualityComparer())
+                    .ToList();
+
+                foreach (var cmd in commands)
                 {
                     var result = await cmd.CheckPreconditionsAsync(Context);
                     if (result.IsSuccess)
@@ -95,6 +104,31 @@ namespace ReadingsBot.Modules
             }
 
             await ReplyAsync("", false, builder.Build());
+        }
+
+        [Command("timezones")]
+        [Summary("List valid time zone formats for the bot.")]
+        public async Task TimeZones(int page = 1)
+        {
+            page--;
+
+            if (page < 0 || page > 20)
+                return;
+
+            var timezones = TimeZoneInfo.GetSystemTimeZones()
+                .OrderBy(x => x.BaseUtcOffset)
+                .ToArray();
+            var timezonesPerPage = 20;
+
+            await Context.SendPaginatedConfirmAsync(page,
+                (curPage) => new EmbedBuilder()
+                .WithColor(_color)
+                .WithTitle("Valid Time Zone Names")
+                .WithDescription(string.Join("\n", timezones
+                    .Skip(curPage * timezonesPerPage)
+                    .Take(timezonesPerPage)
+                    .Select(x => $"{x.Id}: {x.DisplayName}"))),
+                timezones.Length, timezonesPerPage).ConfigureAwait(false);
         }
     }
 }
