@@ -57,21 +57,30 @@ namespace ReadingsBot.Modules
             {
                 List<Data.ScheduledEvent> events = await _scheduleService.GetGuildEvents(Context.Guild.Id);
 
+
                 var builder = new EmbedBuilder()
                 {
                     Color = _color,
-                    Description = $"Here are the scheduled tasks for {Context.Guild.Name}"
                 };
 
-                foreach (Data.ScheduledEvent scheduledEvent in events)
+                if (events is null || events.Count == 0)
                 {
-                    builder.AddField(x =>
+                    builder.WithDescription($"There are no scheduled tasks for {Context.Guild.Name}");
+                }
+                else
+                {
+                    builder.WithDescription($"Here are the scheduled tasks for {Context.Guild.Name}");
+
+                    foreach (Data.ScheduledEvent scheduledEvent in events)
                     {
-                        x.Name = SchedulingService.EventTypeToDescription(scheduledEvent.EventType);
-                        x.Value = EventToString(scheduledEvent);
-                        x.IsInline = false;
+                        builder.AddField(x =>
+                        {
+                            x.Name = SchedulingService.EventTypeToDescription(scheduledEvent.EventType);
+                            x.Value = EventToString(scheduledEvent);
+                            x.IsInline = false;
+                        }
+                        );
                     }
-                    );
                 }
 
                 await ReplyAsync("", false, builder.Build());
