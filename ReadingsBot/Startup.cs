@@ -41,7 +41,6 @@ namespace ReadingsBot
             provider.GetRequiredService<CommandHandler>();
 
             await provider.GetRequiredService<StartupService>().StartAsync();
-            provider.GetRequiredService<ScheduleRunnerService>().Initialize();
             await Task.Delay(-1);
         }
 

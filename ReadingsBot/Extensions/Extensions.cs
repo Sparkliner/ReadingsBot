@@ -1,7 +1,9 @@
 ﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using ReadingsBot.Common;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ReadingsBot.Extensions
@@ -25,6 +27,19 @@ namespace ReadingsBot.Extensions
                 return embed.WithFooter(efb => efb.WithText($"{curPage + 1} / {lastPage + 1}"));
             else
                 return embed.WithFooter(efb => efb.WithText(curPage.ToString()));
+        }
+    }
+    public class CommandInfoEqualityComparer: IEqualityComparer<CommandInfo>
+    {
+        public bool Equals(CommandInfo? cmd1, CommandInfo? cmd2)
+        {
+            if ((cmd1 is null) || (cmd2 is null))
+                return false;
+            return cmd1.Name.Equals(cmd2.Name);
+        }
+        public int GetHashCode(CommandInfo cmd)
+        {
+            return cmd.Name.GetHashCode();
         }
     }
 }

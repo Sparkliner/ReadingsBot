@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Text;
 using Discord;
 using Discord.WebSocket;
@@ -21,17 +22,26 @@ namespace ReadingsBot
             _client = client;
             _schedulingService = schedulingService;
             _readingsPoster = bulkPoster;
+
+            _client.Connected += Initialize;
         }
 
-        public void Initialize()
+        public Task Initialize()
         {
-            ScheduleRunnerThread = new Thread(ScheduleRunnerThread_Func);
-            ScheduleRunnerThread.Start();
+            return Task.Run(() =>
+            {
+                if (!ScheduleRunnerThread.IsAlive)
+                {
+                    ScheduleRunnerThread = new Thread(ScheduleRunnerThread_Func);
+                    ScheduleRunnerThread.IsBackground = true;
+                    ScheduleRunnerThread.Start();
+                }
+            });
         }
 
         private void ScheduleRunnerThread_Func()
         {
-            while (_client.ConnectionState != ConnectionState.Disconnecting)
+            while (true) //since thread is background this should be ok now
             {
                 if (_client.ConnectionState != ConnectionState.Connected)
                 {
@@ -44,7 +54,7 @@ namespace ReadingsBot
                 var eventresult = _schedulingService.GetCurrentEvents(DateTime.UtcNow.TimeOfDay);
                 eventresult.Wait();
                 List<Data.ScheduledEvent> currentEvents = eventresult.Result;
-                if (!(currentEvents is null))
+                if (!(currentEvents is null) && currentEvents.Any())
                 {
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"Found {currentEvents.Count} events");
                     List<Thread> ts = new List<Thread>();
@@ -70,7 +80,12 @@ namespace ReadingsBot
                     }
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"Executed all events");
                 }
+                else
+                {
+                    LogUtilities.WriteLog(LogSeverity.Verbose, $"No current events found");
+                }
             }
+            //LogUtilities.WriteLog(LogSeverity.Warning, $"ScheduleRunnerThread exiting");
         }
     }
 }
