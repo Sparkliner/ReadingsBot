@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using Microsoft.Extensions.Configuration;
 using ReadingsBot.Extensions;
 using System;
 using System.Collections.Generic;
