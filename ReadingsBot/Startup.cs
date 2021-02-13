@@ -19,8 +19,7 @@ namespace ReadingsBot
             var dotenv = string.Join("/", root, ".env");
             EnvironmentUtility.Load(dotenv);
 
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory);
+            var builder = new ConfigurationBuilder();
             builder.AddEnvironmentVariables("READINGSBOT_");
             Configuration = builder.Build();
         }
