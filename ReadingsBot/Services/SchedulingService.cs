@@ -30,7 +30,7 @@ namespace ReadingsBot
             }
         }
 
-        public async Task<bool> ScheduleNewEvent(ulong guildId, ulong channelId, TimeSpan eventTime, string timeZone, IReadingInfo readingInfo)
+        public async Task<bool> ScheduleOrUpdateEvent(ulong guildId, ulong channelId, TimeSpan eventTime, string timeZone, IReadingInfo readingInfo)
         {
             //check that this event is not scheduled already
             var builder = Builders<Data.ScheduledEvent>.Filter;
