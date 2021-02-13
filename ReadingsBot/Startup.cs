@@ -39,6 +39,7 @@ namespace ReadingsBot
             var provider = services.BuildServiceProvider();
             provider.GetRequiredService<LoggingService>();
             provider.GetRequiredService<CommandHandler>();
+            provider.GetRequiredService<ScheduleRunnerService>();
 
             await provider.GetRequiredService<StartupService>().StartAsync();
             await Task.Delay(-1);
