@@ -1,5 +1,6 @@
 # ReadingsBot
-Discord Bot for automated posting of lives of the Orthodox saints.
+Discord Bot for automated posting of lives of the Orthodox saints and eventually other daily readings.
+Lives used with permission from OCA(OCA.org).
 
 # Usage
 The default prefix for the bot is `%`. This can be changed by calling `%setprefix`. 
@@ -14,9 +15,9 @@ If you wish to make your own version of ReadingsBot, you will have to modify the
 
 # Dependencies
 All the dependencies can be installed using the Nuget Package Manager.
--Discord.NET
--Microsoft.Extensions.Configuration
--Microsoft.Extensions.Configuration.EnvironmentVariables
--Microsoft.Extensions.DependencyInjection
--MongoDB.Driver
--NodaTime
+- Discord.NET
+- Microsoft.Extensions.Configuration
+- Microsoft.Extensions.Configuration.EnvironmentVariables
+- Microsoft.Extensions.DependencyInjection
+- MongoDB.Driver
+- NodaTime
