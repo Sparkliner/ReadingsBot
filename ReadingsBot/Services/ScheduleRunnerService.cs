@@ -30,7 +30,7 @@ namespace ReadingsBot
         {
             return Task.Run(() =>
             {
-                if (!ScheduleRunnerThread.IsAlive)
+                if (ScheduleRunnerThread is null || !ScheduleRunnerThread.IsAlive)
                 {
                     ScheduleRunnerThread = new Thread(ScheduleRunnerThread_Func);
                     ScheduleRunnerThread.IsBackground = true;
@@ -41,6 +41,7 @@ namespace ReadingsBot
 
         private void ScheduleRunnerThread_Func()
         {
+            LogUtilities.WriteLog(LogSeverity.Verbose, "Schedule Thread Started");
             while (true) //since thread is background this should be ok now
             {
                 if (_client.ConnectionState != ConnectionState.Connected)
@@ -62,13 +63,10 @@ namespace ReadingsBot
                     {
                         ts.Add(new Thread(() =>
                         {
-                            switch (scheduledEvent.EventType)
+                            switch (scheduledEvent.EventInfo)
                             {
-                                case SchedulingService.EventType.OCALives:
-                                    var result = _readingsPoster.PostReadings(
-                                        ReadingsPostingService.ReadingType.OCALives,
-                                        scheduledEvent.ChannelId
-                                        );
+                                case SaintsLivesReadingInfo:
+                                    var result = _readingsPoster.PostLives(scheduledEvent.ChannelId);
                                     result.Wait();
                                     break;
                             }

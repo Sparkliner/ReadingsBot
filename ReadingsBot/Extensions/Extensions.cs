@@ -42,4 +42,11 @@ namespace ReadingsBot.Extensions
             return cmd.Name.GetHashCode();
         }
     }
+
+    public class EmbedWithImage
+    {
+        public EmbedBuilder Builder;
+        public string ImageFile;
+    }
+
 }

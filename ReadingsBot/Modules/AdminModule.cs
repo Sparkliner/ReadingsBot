@@ -52,6 +52,7 @@ namespace ReadingsBot.Modules
             }
 
             [Command("show")]
+            [RequireUserPermission(ChannelPermission.ManageMessages)]
             [Summary("Shows all scheduled tasks.")]
             public async Task Show()
             {
@@ -75,7 +76,7 @@ namespace ReadingsBot.Modules
                     {
                         builder.AddField(x =>
                         {
-                            x.Name = SchedulingService.EventTypeToDescription(scheduledEvent.EventType);
+                            x.Name = scheduledEvent.EventInfo.Description; 
                             x.Value = EventToString(scheduledEvent);
                             x.IsInline = false;
                         }

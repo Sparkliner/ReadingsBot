@@ -11,7 +11,7 @@ namespace ReadingsBot.Data
         //Time of the event as UTC
         public long EventTimeTicks { get; set; }
         public string TimeZone { get; set; }
-        public SchedulingService.EventType EventType { get; set; }
+        public IReadingInfo EventInfo { get; set; }
 
         public TimeSpan GetEventTime()
         {

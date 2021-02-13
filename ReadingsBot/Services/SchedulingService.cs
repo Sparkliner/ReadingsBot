@@ -13,16 +13,6 @@ namespace ReadingsBot
         private readonly IMongoDatabase _database;
         private readonly IMongoCollection<Data.ScheduledEvent> _events;
 
-        public enum EventType
-        {
-            OCALives
-        }
-
-        private static readonly string[] EventTypeDescription =
-        {
-            "Lives of the Saints"
-        };
-
         public SchedulingService(IMongoClient client, IConfigurationRoot config)
         {
             _config = config;
@@ -40,14 +30,14 @@ namespace ReadingsBot
             }
         }
 
-        public async Task<bool> ScheduleNewEvent(ulong guildId, ulong channelId, TimeSpan eventTime, string timeZone, EventType eventType)
+        public async Task<bool> ScheduleNewEvent(ulong guildId, ulong channelId, TimeSpan eventTime, string timeZone, IReadingInfo readingInfo)
         {
             //check that this event is not scheduled already
             var builder = Builders<Data.ScheduledEvent>.Filter;
             var filter = builder.And(
                 builder.Eq("GuildId", guildId),
                 builder.Eq("ChannelId", channelId),
-                builder.Eq("EventType", eventType)
+                builder.Eq("EventInfo", readingInfo)
                 );
 
             //upsert the record
@@ -66,13 +56,13 @@ namespace ReadingsBot
             return rescheduled;
         }
 
-        public async Task<bool> CancelScheduledEvent(ulong guildId, ulong channelId, EventType eventType)
+        public async Task<bool> CancelScheduledEvent(ulong guildId, ulong channelId, IReadingInfo eventInfo)
         {
             var builder = Builders<Data.ScheduledEvent>.Filter;
             var filter = builder.And(
                 builder.Eq("GuildId", guildId),
                 builder.Eq("ChannelId", channelId),
-                builder.Eq("EventType", eventType)
+                builder.Eq("EventInfo", eventInfo)
                 );
             var result = await _events.DeleteOneAsync(filter);
             bool deleted = false;
@@ -100,11 +90,6 @@ namespace ReadingsBot
             return await _events.Find(filter).ToListAsync();
         }
         
-        public static string EventTypeToDescription(EventType eventType)
-        {
-            return EventTypeDescription[(int)eventType];
-        }
-
         private static void LogException(MongoException e)
         {
             LogUtilities.WriteLog(Discord.LogSeverity.Error, e.ToString());
