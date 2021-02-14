@@ -6,7 +6,7 @@
     <Nullable>annotations</Nullable>
     <Version>1.0.1</Version>
     <Authors>Sparkliner</Authors>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
