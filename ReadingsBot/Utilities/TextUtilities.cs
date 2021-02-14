@@ -1,4 +1,7 @@
-﻿using System;
+﻿using NodaTime;
+using NodaTime.Text;
+using NodaTime.TimeZones;
+using System;
 using System.Linq;
 using System.Web;
 using System.Globalization;
@@ -8,12 +11,42 @@ namespace ReadingsBot.Utilities
 {
     public static class TextUtilities
     {
+        //private static CompositePatternBuilder<ZonedDateTime> patternBuilder;
+
+        //private static string[] patterns =
+        //{
+        //    "HH':'mm z",
+        //    "H':'mm z",
+        //    "HH z",
+        //    "H z",
+        //    "hh':'mm tt z",
+        //    "hh':'mm t z",
+        //    "h':'mm tt z",
+        //    "h':'mm t z",
+        //    "h tt z",
+        //    "h t z"
+        //};
+
+        //static TextUtilities()
+        //{
+        //    foreach (string pattern in patterns)
+        //    {
+        //        patternBuilder.Add(ZonedDateTimePattern.Create(
+        //            pattern, CultureInfo.InvariantCulture,
+        //            Resolvers.LenientResolver, DateTimeZoneProviders.Tzdb, new ZonedDateTime()));
+        //    }
+        //}
+
         public static string ParseWebText(string input)
         {
             return HttpUtility.HtmlDecode(input.Replace("<p>",""));
         }
 
-        public static TimeSpan ParseTimeSpanAsUtc(string input, out string timeZone)
+        //public static ZonedDateTime NodaParseTime(string input, out string timeZone)
+        //{
+        //    var pattern = ZonedDateTimePattern.Create("H:mm")
+        //}
+        public static TimeSpan ParseTimeSpanAsLocal(string input, out string timeZone)
         {
             string timeString;
             string timeZoneString;
@@ -48,9 +81,9 @@ namespace ReadingsBot.Utilities
             }
             if (!DateTime.TryParse(timeString, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
                 throw new ArgumentException("Time format not recognized - check `help` command for correct format");
-
+            //dt assumes the current date according to the documentation
             timeZone = tz.Id;
-            return TimeZoneInfo.ConvertTimeToUtc(dt, tz).TimeOfDay;
+            return dt.TimeOfDay;
         }
 
         private static int IndexOfAmPm(List<String> tokens)
