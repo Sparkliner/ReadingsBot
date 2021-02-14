@@ -3,7 +3,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -14,6 +13,7 @@ namespace ReadingsBot
     public class OCALivesCacheService
     {
         private readonly IConfigurationRoot _config;
+        private readonly HttpClient _httpClient;
 
         private string JsonCacheDirectory { get; }
         private string ImageCacheDirectory { get; }
@@ -28,9 +28,10 @@ namespace ReadingsBot
 
         private readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions();
 
-        public OCALivesCacheService(IConfigurationRoot config)
+        public OCALivesCacheService(IConfigurationRoot config, HttpClient httpClient)
         {
             _config = config;
+            _httpClient = httpClient;
             jsonOptions.PropertyNameCaseInsensitive = true;
             JsonCacheDirectory = string.Join("/", _config["cache_directory"],"cache/OCA/");
             ImageCacheDirectory = string.Join("/", _config["cache_directory"], "cache/OCA/images");
@@ -92,9 +93,7 @@ namespace ReadingsBot
                 JsonFileName, 
                 JsonSerializer.Serialize(
                     LocalCache,
-                    options: new JsonSerializerOptions { WriteIndented = true }
-                    )
-                );
+                    options: new JsonSerializerOptions { WriteIndented = true }));
         }
 
         private async Task DownloadAndCacheImages()
@@ -104,17 +103,21 @@ namespace ReadingsBot
             if (!Directory.Exists(ImageCacheDirectory))
                 Directory.CreateDirectory(ImageCacheDirectory);
             int i = 0;
-            using WebClient client = new WebClient();
             foreach (Data.OCALife life in LocalCache.commemorations)
             {
                 string url = life.image;
                 if (!string.IsNullOrWhiteSpace(url))
                 {
                     string imageFile = String.Join("/", ImageCacheDirectory, $"image_{i}.jpg");
-                    await client.DownloadFileTaskAsync(
-                        new Uri(url),
-                        imageFile
-                        );
+                    
+                    using HttpResponseMessage response = await _httpClient.GetAsync(url);
+                    response.EnsureSuccessStatusCode();
+                    using var inStream = await response.Content.ReadAsStreamAsync();
+
+                    using var fileStream = File.Create(imageFile);
+                    inStream.Seek(0, SeekOrigin.Begin);
+                    await inStream.CopyToAsync(fileStream);
+                    
                     //update this in our class structure as well
                     life.image = imageFile;
                     ++i;
@@ -136,13 +139,18 @@ namespace ReadingsBot
 
         private void UpdateCacheDate()
         {
-            CacheDate = DateTimeOffset.ParseExact(LocalCache.date_rfc, "ddd, dd MMM yyyy HH:mm:ss zz'00'", provider);
+            CacheDate = DateTimeOffset.ParseExact(
+                LocalCache.date_rfc,
+                "ddd, dd MMM yyyy HH:mm:ss zz'00'",
+                provider);
         }
 
         private async Task<string> GetLivesWeb()
         {
-            using HttpClient client = new HttpClient();
-            HttpResponseMessage response = await client.GetAsync(_config["oca_uri"]);
+            LogUtilities.WriteLog(
+                LogSeverity.Debug,
+                $"Using HTTP user-agent: {_httpClient.DefaultRequestHeaders.UserAgent.ToString()}");
+            using HttpResponseMessage response = await _httpClient.GetAsync(_config["oca_uri"]);
             response.EnsureSuccessStatusCode();
 
             using var content = response.Content;

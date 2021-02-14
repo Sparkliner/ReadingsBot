@@ -48,7 +48,7 @@ namespace ReadingsBot.Modules
                 string timeZone;
                 try
                 {
-                    ts = Utilities.TextUtilities.ParseTimeSpanAsUtc(time, out timeZone);
+                    ts = Utilities.TextUtilities.ParseTimeSpanAsLocal(time, out timeZone);
                 }
                 catch (ArgumentException e)
                 {
@@ -57,7 +57,7 @@ namespace ReadingsBot.Modules
                 }
                 
 
-                bool rescheduled = await _scheduleService.ScheduleNewEvent(
+                bool rescheduled = await _scheduleService.ScheduleOrUpdateEvent(
                     Context.Guild.Id,
                     Context.Channel.Id,
                     ts,

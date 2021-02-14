@@ -1,5 +1,7 @@
-﻿using System;
+﻿using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using System.Reflection;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -19,8 +21,7 @@ namespace ReadingsBot
             var dotenv = string.Join("/", root, ".env");
             EnvironmentUtility.Load(dotenv);
 
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory);
+            var builder = new ConfigurationBuilder();
             builder.AddEnvironmentVariables("READINGSBOT_");
             Configuration = builder.Build();
         }
@@ -41,6 +42,19 @@ namespace ReadingsBot
             provider.GetRequiredService<CommandHandler>();
             provider.GetRequiredService<ScheduleRunnerService>();
 
+            var productValue = new ProductInfoHeaderValue(
+                Assembly.GetExecutingAssembly().GetName().Name,
+                Assembly.GetExecutingAssembly().GetName().Version.ToString());
+            LogUtilities.WriteLog(LogSeverity.Debug, $"Product Version: {productValue.ToString()}");
+            var commentValue = new ProductInfoHeaderValue(
+                "(+https://github.com/Sparkliner/ReadingsBot/)");
+            provider.GetRequiredService<HttpClient>()
+                .DefaultRequestHeaders
+                .UserAgent.Add(productValue);
+            provider.GetRequiredService<HttpClient>()
+                .DefaultRequestHeaders
+                .UserAgent.Add(commentValue);
+
             await provider.GetRequiredService<StartupService>().StartAsync();
             await Task.Delay(-1);
         }
@@ -58,6 +72,7 @@ namespace ReadingsBot
                 DefaultRunMode = RunMode.Async
             }))
             .AddSingleton(Configuration)
+            .AddSingleton(new HttpClient())
             .AddSingleton<IMongoClient>(s => new MongoClient(Configuration["database_uri"]))
             .AddSingleton<CommandHandler>()
             .AddSingleton<StartupService>()
