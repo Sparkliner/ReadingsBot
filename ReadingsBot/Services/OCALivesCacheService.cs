@@ -149,7 +149,7 @@ namespace ReadingsBot
         {
             LogUtilities.WriteLog(
                 LogSeverity.Debug,
-                $"Using HTTP user-agent: {_httpClient.DefaultRequestHeaders.UserAgent.ToString()}");
+                $"Using HTTP user-agent: {_httpClient.DefaultRequestHeaders.UserAgent}");
             using HttpResponseMessage response = await _httpClient.GetAsync(_config["oca_uri"]);
             response.EnsureSuccessStatusCode();
 

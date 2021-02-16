@@ -49,10 +49,9 @@ namespace ReadingsBot
                     Thread.Sleep(1000);
                     continue;
                 }
-                Thread.Sleep(1*60*1000); //sleep for a minute
                 LogUtilities.WriteLog(LogSeverity.Verbose, "Polling event schedule");
 
-                var eventresult = _schedulingService.GetCurrentEvents(DateTime.UtcNow.TimeOfDay);
+                var eventresult = _schedulingService.GetCurrentEvents();
                 eventresult.Wait();
                 List<Data.ScheduledEvent> currentEvents = eventresult.Result;
                 if (!(currentEvents is null) && currentEvents.Any())
@@ -70,6 +69,7 @@ namespace ReadingsBot
                                     result.Wait();
                                     break;
                             }
+                            _schedulingService.HandleEventRecurrence(scheduledEvent).Wait();
                         }));
                     }  
                     foreach (Thread t in ts)
@@ -82,6 +82,7 @@ namespace ReadingsBot
                 {
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"No current events found");
                 }
+                Thread.Sleep(1*60*1000); //sleep for a minute
             }
             //LogUtilities.WriteLog(LogSeverity.Warning, $"ScheduleRunnerThread exiting");
         }

@@ -8,6 +8,7 @@ using Discord.WebSocket;
 using MongoDB.Driver;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NodaTime;
 
 namespace ReadingsBot
 {
@@ -45,7 +46,7 @@ namespace ReadingsBot
             var productValue = new ProductInfoHeaderValue(
                 Assembly.GetExecutingAssembly().GetName().Name,
                 Assembly.GetExecutingAssembly().GetName().Version.ToString());
-            LogUtilities.WriteLog(LogSeverity.Debug, $"Product Version: {productValue.ToString()}");
+            LogUtilities.WriteLog(LogSeverity.Debug, $"Product Version: {productValue}");
             var commentValue = new ProductInfoHeaderValue(
                 "(+https://github.com/Sparkliner/ReadingsBot/)");
             provider.GetRequiredService<HttpClient>()
@@ -77,6 +78,7 @@ namespace ReadingsBot
             .AddSingleton<CommandHandler>()
             .AddSingleton<StartupService>()
             .AddSingleton<LoggingService>()
+            .AddSingleton<IClock>(SystemClock.Instance)
             .AddSingleton<GuildService>()
             .AddSingleton<OCALivesCacheService>()
             .AddSingleton<ReadingsPostingService>()
