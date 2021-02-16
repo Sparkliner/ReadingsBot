@@ -1,6 +1,8 @@
 ﻿using MongoDB.Driver;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using System;
+using NodaTime;
 
 namespace ReadingsBot
 {
@@ -18,8 +20,9 @@ namespace ReadingsBot
 
             try
             {
-                _database = client.GetDatabase(_config["database_id"]);
+                _database = _client.GetDatabase(_config["database_id"]);
                 _guilds = _database.GetCollection<Data.GuildEntity>("guilds");
+                LogUtilities.WriteLog(Discord.LogSeverity.Verbose, "Connected to guild database");
             }
             catch(MongoException e)
             {
@@ -65,6 +68,38 @@ namespace ReadingsBot
             {
                 LogException(e);
                 throw;
+            }
+        }
+
+        public async Task SetGuildTimeZone(ulong guildId, string timeZone)
+        {
+            var filter = Builders<Data.GuildEntity>.Filter.Eq("GuildID", guildId);
+            var update = Builders<Data.GuildEntity>.Update.Set("TimeZone", timeZone);
+
+            await _guilds.UpdateOneAsync(filter, update);
+        }
+
+        public async Task<DateTimeZone> GetGuildTimeZone(ulong guildId)
+        {
+            var filter = Builders<Data.GuildEntity>.Filter.Eq("GuildID", guildId);
+            Data.GuildEntity guild;
+            try
+            {
+                guild = await _guilds.Find(filter).FirstOrDefaultAsync();
+            }
+            catch(MongoException e)
+            {
+                LogException(e);
+                throw;
+            }
+
+            if (guild is null)
+            {
+                return null;
+            }
+            else
+            {
+                return guild.TimeZone;
             }
         }
 

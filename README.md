@@ -21,3 +21,4 @@ All the dependencies can be installed using the Nuget Package Manager.
 - Microsoft.Extensions.DependencyInjection
 - MongoDB.Driver
 - NodaTime
+- TimeZoneNames
