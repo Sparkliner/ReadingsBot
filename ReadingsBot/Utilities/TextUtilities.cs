@@ -6,36 +6,60 @@ using System.Linq;
 using System.Web;
 using System.Globalization;
 using System.Collections.Generic;
+using TimeZoneNames;
 
 namespace ReadingsBot.Utilities
 {
     public static class TextUtilities
     {
-        //private static CompositePatternBuilder<ZonedDateTime> patternBuilder;
+        private readonly static CompositePatternBuilder<LocalTime> patternBuilder = new CompositePatternBuilder<LocalTime>();
 
-        //private static string[] patterns =
-        //{
-        //    "HH':'mm z",
-        //    "H':'mm z",
-        //    "HH z",
-        //    "H z",
-        //    "hh':'mm tt z",
-        //    "hh':'mm t z",
-        //    "h':'mm tt z",
-        //    "h':'mm t z",
-        //    "h tt z",
-        //    "h t z"
-        //};
+        private readonly static IPattern<LocalTime> localTimePattern;
 
-        //static TextUtilities()
-        //{
-        //    foreach (string pattern in patterns)
-        //    {
-        //        patternBuilder.Add(ZonedDateTimePattern.Create(
-        //            pattern, CultureInfo.InvariantCulture,
-        //            Resolvers.LenientResolver, DateTimeZoneProviders.Tzdb, new ZonedDateTime()));
-        //    }
-        //}
+        private readonly static List<(string pattern,Func<LocalTime,Boolean> predicate)> patterns = new List<(string, Func<LocalTime, bool>)>
+        {
+            ( "HH':'mm", _ => true ),
+            ( "hh':'mm tt", _ => true ),
+            ( "hh':'mmtt", _ => false ),
+            ( "hh':'mm t", _ => true ),
+            ( "hh':'mmt", _ => false ),
+            ( "H':'mm", _ => true ),
+            ( "HH", _ => false ),
+            ( "h':'mm tt", _ => true ),
+            ( "h':'mmtt", _ => false ),
+            ( "h':'mm t", _ => true ),
+            ( "h':'mmt", _ => false ),
+            ( "%H", _ => false ),
+            ( "h tt", _ => false ),
+            ( "htt", _ => false ),
+            ( "h t", _ => false ),
+            ( "ht", _ => false )
+        };
+
+        static TextUtilities()
+        {
+            foreach ((string pattern, Func<LocalTime, Boolean> predicate) in patterns)
+            {
+                patternBuilder.Add(LocalTimePattern.Create(
+                    pattern, CultureInfo.InvariantCulture,
+                    new LocalTime(0, 0)), predicate);
+            }
+
+            localTimePattern = patternBuilder.Build();
+        }
+
+        public static DateTimeZone ParseTimeZone(string input)
+        {
+            DateTimeZone tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(input.Trim());
+            if (tz is null)
+            {
+                throw new ArgumentException("Time zone not recognized");
+            }
+            else
+            {
+                return tz;
+            }
+        }
 
         public static string ParseWebText(string input)
         {
@@ -46,63 +70,45 @@ namespace ReadingsBot.Utilities
         //{
         //    var pattern = ZonedDateTimePattern.Create("H:mm")
         //}
-        public static TimeSpan ParseTimeSpanAsLocal(string input, out string timeZone)
+        public static LocalTime ParseLocalTime(string input, out DateTimeZone timeZone)
         {
-            string timeString;
-            string timeZoneString;
-            List<String> tokens = input.Trim().Split().ToList();
-
-            //assume AM/PM must be in one of first two tokens for 12hr time
-            int indexOfAmPm = IndexOfAmPm(tokens.Take(2).ToList());
-            if (indexOfAmPm > 0)
+            List<String> tokens = input.Trim().Split("-t").ToList();
+            foreach (var token in tokens)
             {
-                timeString = string.Join(" ", tokens.Take(indexOfAmPm + 1));
-                timeZoneString = string.Join(" ", tokens.Skip(indexOfAmPm + 1));
+                LogUtilities.WriteLog(Discord.LogSeverity.Debug, $"{token}");
+            }
+
+            if (tokens.Count > 2)
+            {
+                throw new ArgumentException("Time format not recognized - check `help` command for correct format");
+            }
+            else if (tokens.Count == 2)
+            {
+                //assume time zone was input, let's try to parse it
+                timeZone = ParseTimeZone(tokens[1].Trim());
             }
             else
             {
-                //assume 24 hour time
-                timeString = tokens[0];
-                timeZoneString = string.Join(" ", tokens.Skip(1));
+                //use default time zone, for now pass null back
+                timeZone = null;
             }
 
-            TimeZoneInfo tz;
-            try
+            ParseResult<LocalTime>  parseResult = localTimePattern.Parse(tokens[0].Trim());
+
+            if (!parseResult.Success)
             {
-                tz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneString);
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                throw new ArgumentException("Time zone or time format not recognized");
-            }
-            catch (ArgumentNullException)
-            {
-                throw new ArgumentException("Time zone missing");
-            }
-            if (!DateTime.TryParse(timeString, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
                 throw new ArgumentException("Time format not recognized - check `help` command for correct format");
-            //dt assumes the current date according to the documentation
-            timeZone = tz.Id;
-            return dt.TimeOfDay;
+            }
+            else
+            {
+                return parseResult.Value;
+            }
         }
 
-        private static int IndexOfAmPm(List<String> tokens)
+        public static string FormatLocalTimeAndTimeZone(LocalTime time, DateTimeZone timeZone)
         {
-            //tokens: a 2-member IEnumerable of strings
-            //check first and second token for am/pm
-            //if not found return -1
-            return Math.Max(
-                tokens.FindIndex(s => s.ToLower().Contains("am")),
-                tokens.FindIndex(s => s.ToLower().Contains("pm"))
-                );
-        }
-
-        public static string FormatTimeLocallyAsString(TimeSpan time, string timeZone)
-        {
-            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timeZone);
-            DateTime utcTime = new DateTime(2000, 01, 01, time.Hours, time.Minutes, time.Seconds, DateTimeKind.Utc);
-            DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, tz);
-            return localTime.ToString("hh:mm tt", CultureInfo.InvariantCulture) + " " + timeZone;
+            return $"{time.ToString("h:mm tt", CultureInfo.InvariantCulture)}" +
+                $" {TZNames.GetNamesForTimeZone(timeZone.Id, "en-US").Generic}";
         }
     }
 }

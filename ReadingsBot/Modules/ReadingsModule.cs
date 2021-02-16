@@ -1,5 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
+using NodaTime;
+using ReadingsBot.Utilities;
 using System;
 using System.Threading.Tasks;
 
@@ -11,13 +13,9 @@ namespace ReadingsBot.Modules
     [RequireUserPermission(ChannelPermission.ManageMessages)]
     public class ReadingsModule: ModuleBase<SocketCommandContext>
     {
-        private readonly SchedulingService _scheduleService;
+
         private static readonly Color _color = new Color(135, 216, 112);
 
-        public ReadingsModule(SchedulingService scheduleService)
-        {
-            _scheduleService = scheduleService;
-        }
         public static Color GetColor()
         {
             return _color;
@@ -26,52 +24,72 @@ namespace ReadingsBot.Modules
         public abstract class DailyPostModule: ModuleBase<SocketCommandContext>
         {
             protected readonly SchedulingService _scheduleService;
+            protected readonly GuildService _guildService;
             protected readonly ReadingsPostingService _readingsPoster;
+            protected readonly IClock _clock;
 
             protected readonly IReadingInfo _readingInfo;
 
             public DailyPostModule(
                 SchedulingService scheduleService,
+                GuildService guildService,
                 ReadingsPostingService readingsPoster,
+                IClock clock,
                 IReadingInfo readingInfo)
             {
                 _scheduleService = scheduleService;
+                _guildService = guildService;
                 _readingsPoster = readingsPoster;
+                _clock = clock;
                 _readingInfo = readingInfo;
             }
 
             //[Command("schedule")]
             //[Summary("Schedule the bot to post {readings} at a given time of day in the channel this command is called from.")]
-            public virtual async Task Schedule([Remainder] [Summary("Formatted as [time] [time zone]")] string time)
+            public virtual async Task Schedule([Remainder] [Summary("Formatted as [time] (Optional)<-t [time zone]>")] string time)
             {
-                TimeSpan ts;
-                string timeZone;
+                LocalTime localEventTime;
+                DateTimeZone timeZone;
                 try
                 {
-                    ts = Utilities.TextUtilities.ParseTimeSpanAsLocal(time, out timeZone);
+                    localEventTime = Utilities.TextUtilities.ParseLocalTime(time, out timeZone);
                 }
                 catch (ArgumentException e)
                 {
                     await ReplyAsync(e.Message);
                     return;
                 }
-                
+
+                if (timeZone is null)
+                {
+                    //use default time zone
+                    timeZone = await _guildService.GetGuildTimeZone(Context.Guild.Id);
+                }
+
+                ZonedClock zc = new ZonedClock(_clock, timeZone, CalendarSystem.Iso);
+                LocalDateTime localEventDateTime = zc.GetCurrentDate() + localEventTime;
+                //if the chosen time is already past today, set it for tomorrow instead
+                if (localEventDateTime < zc.GetCurrentLocalDateTime())
+                {
+                    localEventDateTime = localEventDateTime.PlusDays(1);
+                }
+                ZonedDateTime eventZonedDateTime = localEventDateTime.InZoneLeniently(timeZone);
 
                 bool rescheduled = await _scheduleService.ScheduleOrUpdateEvent(
-                    Context.Guild.Id,
-                    Context.Channel.Id,
-                    ts,
-                    timeZone,
-                    _readingInfo
-                    );
+                    Data.ScheduledEvent.CreateDailyEvent(
+                        Context.Guild.Id,
+                        Context.Channel.Id,
+                        _readingInfo,
+                        eventZonedDateTime
+                        ));
 
                 if (rescheduled)
                 {
-                    await ReplyAsync($"Rescheduled {_readingInfo.Description} posting in this channel to {Utilities.TextUtilities.FormatTimeLocallyAsString(ts,timeZone)} every day.");
+                    await ReplyAsync($"Rescheduled {_readingInfo.Description} posting in this channel to {TextUtilities.FormatLocalTimeAndTimeZone(localEventTime,timeZone)} every day.");
                 }
                 else
                 {
-                    await ReplyAsync($"Scheduled {_readingInfo.Description} posting in this channel for {Utilities.TextUtilities.FormatTimeLocallyAsString(ts, timeZone)} every day.");
+                    await ReplyAsync($"Scheduled {_readingInfo.Description} posting in this channel for {TextUtilities.FormatLocalTimeAndTimeZone(localEventTime, timeZone)} every day.");
                 }
 
             }
@@ -80,7 +98,7 @@ namespace ReadingsBot.Modules
             //[Summary("Cancel daily posting of {readings} in the channel this command is called from.")]
             public virtual async Task Cancel()
             {
-                bool deleted = await _scheduleService.CancelScheduledEvent(Context.Guild.Id, Context.Channel.Id, _readingInfo);
+                bool deleted = await _scheduleService.DeleteScheduledEvent(Context.Guild.Id, Context.Channel.Id, _readingInfo);
                 if (deleted)
                 {
                     await ReplyAsync($"Canceled daily {_readingInfo.Description} posting in this channel.");
@@ -99,15 +117,13 @@ namespace ReadingsBot.Modules
         [Group("lives"), Name("Lives of the Saints")]
         public class LivesModule : DailyPostModule
         {
-            private readonly OCALivesCacheService _ocaLives;
 
             public LivesModule(
                 SchedulingService scheduleService,
+                GuildService guildService,
                 ReadingsPostingService bulkPoster,
-                OCALivesCacheService ocaLives) : base(scheduleService, bulkPoster, new SaintsLivesReadingInfo())
-            {
-                _ocaLives = ocaLives;
-            }
+                IClock clock) : base(scheduleService, guildService, bulkPoster, clock, new SaintsLivesReadingInfo())
+            { }
 
             [Command("schedule")]
             [Summary("Schedule the bot to post lives of the Saints at a given time of day in the channel this command is called from.")]

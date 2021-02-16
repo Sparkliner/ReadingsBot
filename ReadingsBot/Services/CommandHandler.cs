@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using System;
 using System.Threading.Tasks;
@@ -23,6 +24,16 @@ namespace ReadingsBot
             _guildService = guildService;
 
             _client.MessageReceived += OnMessageReceivedAsync;
+
+            _commands.CommandExecuted += OnCommandExecutedAsync;
+        }
+
+        private async Task OnCommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, IResult result)
+        {
+            if (!string.IsNullOrEmpty(result?.ErrorReason))
+            {
+                await context.Channel.SendMessageAsync(result.ErrorReason);
+            }
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
@@ -45,10 +56,6 @@ namespace ReadingsBot
             {
                 //Execute command
                 var result = await _commands.ExecuteAsync(context, argPos, _provider);
-
-                //reply with error on failure
-                if (!result.IsSuccess)
-                    await context.Channel.SendMessageAsync(result.ToString());
             }
         }
     }
