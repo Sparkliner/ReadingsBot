@@ -13,8 +13,6 @@ using TimeZoneNames;
 namespace ReadingsBot.Modules
 {
     [Name("Admin")]
-    [RequireUserPermission(GuildPermission.Administrator)]
-    [RequireOwner] 
     [Summary("Administrative commands.")]
     public class AdminModule: ModuleBase<SocketCommandContext>
     {
@@ -27,6 +25,7 @@ namespace ReadingsBot.Modules
         }
 
         [Command("setprefix")]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "Permission")]
         [Summary("Set the prefix for ReadingsBot.")]
         public async Task SetPrefixAsync([Summary("The new prefix")] string newPrefix)
         {
@@ -55,6 +54,7 @@ namespace ReadingsBot.Modules
 
             [Command("setdefault")]
             [Alias("set")]
+            [RequireUserPermission(GuildPermission.Administrator, Group = "Permission")]
             [Summary("Set the default time zone for ReadingsBot.")]
             public async Task SetTimezoneAsync([Summary("IANA time zone name")] string timeZone)
             {
@@ -76,7 +76,7 @@ namespace ReadingsBot.Modules
 
             [Command("getdefault")]
             [Alias("get", "show")]
-            [RequireUserPermission(ChannelPermission.ManageMessages)]
+            [RequireUserPermission(ChannelPermission.ManageMessages, Group = "Permission")]
             [Summary("Display the default time zone for ReadingsBot.")]
             public async Task ShowTimeZoneAsync()
             {
@@ -95,7 +95,7 @@ namespace ReadingsBot.Modules
 
             [Command("list")]
             [Alias("help")]
-            [RequireUserPermission(ChannelPermission.ManageMessages)]
+            [RequireUserPermission(ChannelPermission.ManageMessages, Group = "Permission")]
             [Summary("List valid time zone names for the bot.")]
             public async Task TimeZones(int page = 1)
             {
@@ -133,7 +133,7 @@ namespace ReadingsBot.Modules
             }
 
             [Command("show")]
-            [RequireUserPermission(ChannelPermission.ManageMessages)]
+            [RequireUserPermission(ChannelPermission.ManageMessages, Group = "Permission")]
             [Summary("Shows all scheduled tasks.")]
             public async Task Show()
             {

@@ -9,8 +9,8 @@ namespace ReadingsBot.Modules
 {
     [Name("Readings")]
     [Summary("Commands related to specific readings.")]
-    [RequireContext(ContextType.Guild)]
-    [RequireUserPermission(ChannelPermission.ManageMessages)]
+    [RequireContext(ContextType.Guild, Group = "Context")]
+    [RequireUserPermission(ChannelPermission.ManageMessages, Group = "Permission")]
     public class ReadingsModule: ModuleBase<SocketCommandContext>
     {
 
