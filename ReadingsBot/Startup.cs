@@ -1,14 +1,14 @@
-﻿using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
-using System.Reflection;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using MongoDB.Driver;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
 using NodaTime;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace ReadingsBot
 {
@@ -16,7 +16,7 @@ namespace ReadingsBot
     {
         public IConfigurationRoot Configuration { get; }
 
-        public Startup(string[] args)
+        public Startup()
         {
             var root = System.IO.Directory.GetCurrentDirectory();
             var dotenv = string.Join("/", root, ".env");
@@ -29,7 +29,7 @@ namespace ReadingsBot
 
         public static async Task RunAsync(string[] args)
         {
-            var startup = new Startup(args);
+            var startup = new Startup();
             await startup.RunAsync();
         }
 
@@ -78,9 +78,10 @@ namespace ReadingsBot
             .AddSingleton<CommandHandler>()
             .AddSingleton<StartupService>()
             .AddSingleton<LoggingService>()
+            .AddSingleton<BlogCacheService>()
             .AddSingleton<IClock>(SystemClock.Instance)
             .AddSingleton<GuildService>()
-            .AddSingleton<OCALivesCacheService>()
+            .AddSingleton<OcaLivesCacheService>()
             .AddSingleton<ReadingsPostingService>()
             .AddSingleton<SchedulingService>()
             .AddSingleton<ScheduleRunnerService>();

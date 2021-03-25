@@ -1,99 +1,52 @@
 ﻿using Discord;
+using Microsoft.Extensions.Configuration;
+using NodaTime;
+using NodaTime.Text;
 using System;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 
 namespace ReadingsBot
 {
-    public class OCALivesCacheService
+    public class OcaLivesCacheService : JsonCacheService<Data.OcaLives>
     {
-        private readonly IConfigurationRoot _config;
         private readonly HttpClient _httpClient;
 
-        private string JsonCacheDirectory { get; }
         private string ImageCacheDirectory { get; }
-        private string JsonFileName { get; }
 
-        private Data.OCALives LocalCache;
-
-        private DateTimeOffset CacheDate { get; set; }
-
-        private readonly CultureInfo provider = CultureInfo.InvariantCulture;
-        private readonly TimeSpan timeOffset = new TimeSpan(-5, 0, 0);
-
-        private readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions();
-
-        public OCALivesCacheService(IConfigurationRoot config, HttpClient httpClient)
+        public OcaLivesCacheService(IConfigurationRoot config, IClock clock, HttpClient httpClient)
+            : base(config,
+                  clock,
+                  "cache/OCA/",
+                  "lives.json",
+                  new JsonSerializerOptions() { PropertyNameCaseInsensitive = true },
+                  DateTimeZoneProviders.Tzdb["America/Detroit"])
         {
-            _config = config;
             _httpClient = httpClient;
-            jsonOptions.PropertyNameCaseInsensitive = true;
-            JsonCacheDirectory = string.Join("/", _config["cache_directory"],"cache/OCA/");
-            ImageCacheDirectory = string.Join("/", _config["cache_directory"], "cache/OCA/images");
-            JsonFileName = string.Join("/", JsonCacheDirectory, "lives.json");
+            JsonOptions.PropertyNameCaseInsensitive = true;
+            ImageCacheDirectory = string.Join("/", _config["data_directory"], "cache/OCA/images");
         }
 
-        public async Task<Data.OCALives> GetLives()
+        public async Task<Data.OcaLives> GetLivesAsync()
         {
             //test that cache exists and is up to date
-            await UpdateCache();
+            await UpdateCacheAsync();
             return LocalCache;
         }
 
-        private async Task UpdateCache()
-        {
-            if (LocalCache is null)
-            {
-                //load from cached file first, if exists
-                //also check that images are cached
-                if (File.Exists(JsonFileName) 
-                    && Directory.Exists(ImageCacheDirectory) 
-                    && Directory.EnumerateFiles(ImageCacheDirectory).Any())
-                {
-                    LogUtilities.WriteLog(LogSeverity.Verbose, "Loading OCA Lives from disk");
-                    LoadToCache(File.ReadAllText(JsonFileName));
-                }
-                else
-                {
-                    await UpdateCacheWeb();
-                    return;
-                }
-            }
-            //check that cached file is current
-            if (CacheDate.Date != DateTimeOffset.UtcNow.ToOffset(timeOffset).Date)
-            {
-                LogUtilities.WriteLog(LogSeverity.Verbose, "OCA Lives cache is out of date");
-                await UpdateCacheWeb();
-            }
-        }
-
-        private void LoadToCache(string json_string)
-        {
-            LocalCache = JsonSerializer.Deserialize<Data.OCALives>(json_string, jsonOptions);
-            UpdateCacheDate();
-        }
-
-        private async Task UpdateCacheWeb()
+        protected override async Task UpdateCacheWebAsync()
         {
             LogUtilities.WriteLog(LogSeverity.Verbose, "Updating OCA Lives cache from the web");
             //fetch lives from web
             string json_string = await GetLivesWeb();
             //store in memory and update date
             LoadToCache(json_string);
-            await DownloadAndCacheImages();
+            Task imageCacheTask = DownloadAndCacheImages();
             //store to disk
-            if (!Directory.Exists(JsonCacheDirectory))
-                Directory.CreateDirectory(JsonCacheDirectory);
-            await File.WriteAllTextAsync(
-                JsonFileName, 
-                JsonSerializer.Serialize(
-                    LocalCache,
-                    options: new JsonSerializerOptions { WriteIndented = true }));
+            Task writeDiskTask = WriteCacheToDiskAsync();
+            await Task.WhenAll(imageCacheTask, writeDiskTask);
         }
 
         private async Task DownloadAndCacheImages()
@@ -103,13 +56,13 @@ namespace ReadingsBot
             if (!Directory.Exists(ImageCacheDirectory))
                 Directory.CreateDirectory(ImageCacheDirectory);
             int i = 0;
-            foreach (Data.OCALife life in LocalCache.commemorations)
+            foreach (Data.OcaLife life in LocalCache.commemorations)
             {
                 string url = life.image;
                 if (!string.IsNullOrWhiteSpace(url))
                 {
                     string imageFile = String.Join("/", ImageCacheDirectory, $"image_{i}.jpg");
-                    
+
                     using HttpResponseMessage response = await _httpClient.GetAsync(url);
                     response.EnsureSuccessStatusCode();
                     using var inStream = await response.Content.ReadAsStreamAsync();
@@ -117,7 +70,7 @@ namespace ReadingsBot
                     using var fileStream = File.Create(imageFile);
                     inStream.Seek(0, SeekOrigin.Begin);
                     await inStream.CopyToAsync(fileStream);
-                    
+
                     //update this in our class structure as well
                     life.image = imageFile;
                     ++i;
@@ -137,12 +90,19 @@ namespace ReadingsBot
             }
         }
 
-        private void UpdateCacheDate()
+        protected override bool IsCacheOutOfDate()
         {
-            CacheDate = DateTimeOffset.ParseExact(
-                LocalCache.date_rfc,
-                "ddd, dd MMM yyyy HH:mm:ss zz'00'",
-                provider);
+            LocalDate today = CacheClock.GetCurrentDate();
+
+            return today > CacheLastUpdatedTime.Date;
+        }
+
+        protected override void UpdateCacheDate()
+        {
+            CacheLastUpdatedTime = OffsetDateTimePattern
+                .CreateWithInvariantCulture("ddd, dd MMM uuuu HH:mm:ss o<M>")
+                .Parse(LocalCache.date_rfc).Value
+                .LocalDateTime;
         }
 
         private async Task<string> GetLivesWeb()

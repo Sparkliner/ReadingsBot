@@ -26,11 +26,11 @@ namespace ReadingsBot.Extensions
             this.Serialize(context, localTime);
         }
 
-        void IBsonSerializer<LocalTime>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, LocalTime localTime)
+        void IBsonSerializer<LocalTime>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, LocalTime value)
         {
             context.Writer.WriteString(
                 LocalTimePattern.CreateWithInvariantCulture("t")
-                .Format(localTime));
+                .Format(value));
         }
 
         public LocalTime Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)

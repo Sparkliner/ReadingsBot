@@ -1,7 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using NodaTime;
-using NodaTime.Text;
 using System;
 
 namespace ReadingsBot.Extensions
@@ -26,12 +25,12 @@ namespace ReadingsBot.Extensions
             this.Serialize(context, dateTimeZone);
         }
 
-        void IBsonSerializer<DateTimeZone>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, DateTimeZone dateTimeZone)
+        void IBsonSerializer<DateTimeZone>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, DateTimeZone value)
         {
-            if (dateTimeZone is null)
-                throw new ArgumentNullException(nameof(dateTimeZone));
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
 
-            context.Writer.WriteString(dateTimeZone.Id);
+            context.Writer.WriteString(value.Id);
         }
 
         public DateTimeZone Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)

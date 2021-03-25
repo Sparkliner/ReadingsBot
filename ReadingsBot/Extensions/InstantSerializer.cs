@@ -1,7 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using NodaTime;
-using NodaTime.Text;
 using System;
 
 namespace ReadingsBot.Extensions
@@ -26,9 +25,9 @@ namespace ReadingsBot.Extensions
             this.Serialize(context, instant);
         }
 
-        void IBsonSerializer<Instant>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, Instant instant)
+        void IBsonSerializer<Instant>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, Instant value)
         {
-            context.Writer.WriteDateTime(instant.ToUnixTimeMilliseconds());
+            context.Writer.WriteDateTime(value.ToUnixTimeMilliseconds());
         }
 
         public Instant Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)

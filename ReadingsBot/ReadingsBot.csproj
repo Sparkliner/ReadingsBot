@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="2.3.0" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.31" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />

@@ -26,11 +26,11 @@ namespace ReadingsBot.Extensions
             this.Serialize(context, zonedDateTime);
         }
 
-        void IBsonSerializer<ZonedDateTime>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, ZonedDateTime zonedDateTime)
+        void IBsonSerializer<ZonedDateTime>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, ZonedDateTime value)
         {
             context.Writer.WriteString(
                 ZonedDateTimePattern.CreateWithInvariantCulture("G", DateTimeZoneProviders.Tzdb)
-                .Format(zonedDateTime)) ;
+                .Format(value));
         }
 
         public ZonedDateTime Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)

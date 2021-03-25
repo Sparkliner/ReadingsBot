@@ -1,8 +1,7 @@
-﻿using MongoDB.Driver;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using System;
+﻿using Microsoft.Extensions.Configuration;
+using MongoDB.Driver;
 using NodaTime;
+using System.Threading.Tasks;
 
 namespace ReadingsBot
 {
@@ -24,7 +23,7 @@ namespace ReadingsBot
                 _guilds = _database.GetCollection<Data.GuildEntity>("guilds");
                 LogUtilities.WriteLog(Discord.LogSeverity.Verbose, "Connected to guild database");
             }
-            catch(MongoException e)
+            catch (MongoException e)
             {
                 LogException(e);
                 throw;
@@ -39,12 +38,12 @@ namespace ReadingsBot
             {
                 guild = await _guilds.Find(filter).FirstOrDefaultAsync();
             }
-            catch(MongoException e)
+            catch (MongoException e)
             {
                 LogException(e);
                 throw;
             }
-            
+
 
             if (guild is null)
             {
@@ -87,7 +86,7 @@ namespace ReadingsBot
             {
                 guild = await _guilds.Find(filter).FirstOrDefaultAsync();
             }
-            catch(MongoException e)
+            catch (MongoException e)
             {
                 LogException(e);
                 throw;

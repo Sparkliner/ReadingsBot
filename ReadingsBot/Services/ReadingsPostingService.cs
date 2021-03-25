@@ -1,10 +1,8 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using System.Threading.Tasks;
-using ReadingsBot.Extensions;
-using System;
+using ReadingsBot.Data;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace ReadingsBot
 {
@@ -12,26 +10,35 @@ namespace ReadingsBot
     public class ReadingsPostingService
     {
         private readonly DiscordSocketClient _client;
-        private readonly OCALivesCacheService _ocaLives;
+        private readonly OcaLivesCacheService _ocaLives;
+        private readonly BlogCacheService _blogs;
 
         private readonly int _postingDelay = 1500;
 
-        public ReadingsPostingService(DiscordSocketClient client, OCALivesCacheService ocaLives)
+        public ReadingsPostingService(DiscordSocketClient client, OcaLivesCacheService ocaLives, BlogCacheService blogs)
         {
             _client = client;
             _ocaLives = ocaLives;
+            _blogs = blogs;
         }
 
-        public async Task PostLives(ulong channelId)
+        public async Task PostLivesAsync(ulong channelId)
         {
-            await PostBulkEmbed(
+            await PostBulkEmbedAsync(
                 Modules.ReadingsModule.GetColor(),
-                (await _ocaLives.GetLives()).GetEmbeds(),
-                channelId
-                );
+                (await _ocaLives.GetLivesAsync()).GetEmbeds(),
+                channelId);
         }
 
-        private async Task PostBulkEmbed(Color color, List<EmbedBuilder> embeds, ulong channelId)
+        public async Task PostBlogsAsync(ulong channelId)
+        {
+            await PostBulkEmbedAsync(
+                Modules.ReadingsModule.GetColor(),
+                await _blogs.GetLatestBlogPostEmbedsAsync(),
+                channelId);
+        }
+
+        private async Task PostBulkEmbedAsync(Color color, List<EmbedBuilder> embeds, ulong channelId)
         {
             var channel = _client.GetChannel(channelId) as ISocketMessageChannel;
             foreach (EmbedBuilder embed in embeds)
@@ -41,7 +48,7 @@ namespace ReadingsBot
             }
         }
 
-        private async Task PostBulkEmbed(Color color, List<EmbedWithImage> embedWIs, ulong channelId)
+        private async Task PostBulkEmbedAsync(Color color, List<EmbedWithImage> embedWIs, ulong channelId)
         {
             var channel = _client.GetChannel(channelId) as ISocketMessageChannel;
             foreach (EmbedWithImage embedWI in embedWIs)

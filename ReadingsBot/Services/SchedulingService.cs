@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using NodaTime;
 using ReadingsBot.Extensions;
-using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ReadingsBot
@@ -43,16 +42,11 @@ namespace ReadingsBot
 
         private static void RegisterClasses()
         {
-            BsonClassMap.RegisterClassMap<SaintsLivesReadingInfo>(c =>
-            {
-                c.AutoMap();
-                c.SetDiscriminator("SaintsLivesReadingInfo");
-            });
-            BsonClassMap.RegisterClassMap<ImageQuoteReadingInfo>(c =>
-            {
-                c.AutoMap();
-                c.SetDiscriminator("ImageQuoteReadingInfo");
-            });
+            BsonClassMap.RegisterClassMap<SaintsLivesReadingInfo>();
+            BsonClassMap.RegisterClassMap<BlogsReadingInfo>();
+            BsonClassMap.RegisterClassMap<ImageQuoteReadingInfo>();
+
+            BsonClassMap.RegisterClassMap<BlogDescription>();
         }
 
         private static void RegisterSerializers()
@@ -64,7 +58,7 @@ namespace ReadingsBot
             BsonSerializer.RegisterSerializer(InstantSerializer.Instance);
         }
 
-        public async Task<bool> ScheduleOrUpdateEvent(Data.ScheduledEvent scheduledEvent)
+        public async Task<bool> ScheduleOrUpdateEventAsync(Data.ScheduledEvent scheduledEvent)
         {
             //check that this event is not scheduled already
             var builder = Builders<Data.ScheduledEvent>.Filter;
@@ -87,11 +81,11 @@ namespace ReadingsBot
             return rescheduled;
         }
 
-        public async Task HandleEventRecurrence(Data.ScheduledEvent scheduledEvent)
+        public async Task HandleEventRecurrenceAsync(Data.ScheduledEvent scheduledEvent)
         {
             if (!scheduledEvent.IsRecurring)
             {
-                await DeleteScheduledEvent(scheduledEvent.GuildId, scheduledEvent.GuildId, scheduledEvent.EventInfo);
+                await DeleteScheduledEventAsync(scheduledEvent.GuildId, scheduledEvent.GuildId, scheduledEvent.EventInfo);
             }
             else
             {
@@ -109,24 +103,42 @@ namespace ReadingsBot
             }
         }
 
-        public async Task<bool> DeleteScheduledEvent(ulong guildId, ulong channelId, IReadingInfo eventInfo)
+        public async Task<bool> DeleteScheduledEventAsync(ulong guildId, ulong channelId, IReadingInfo eventInfo)
+        {
+            Data.ScheduledEvent existing = await GetMatchingEventAsync(guildId, channelId, eventInfo);
+
+            if (existing is null)
+            {
+                return false;
+            }
+            else
+            {
+                var builder = Builders<Data.ScheduledEvent>.Filter;
+                var filter = builder.Eq("_id", existing.Id);
+                var result = await _events.DeleteOneAsync(filter);
+                bool deleted = false;
+                if (result.IsAcknowledged)
+                {
+                    deleted = result.DeletedCount > 0;
+                }
+                return deleted;
+            }
+        }
+
+        private async Task<Data.ScheduledEvent> GetMatchingEventAsync(ulong guildId, ulong channelId, IReadingInfo eventInfo)
         {
             var builder = Builders<Data.ScheduledEvent>.Filter;
             var filter = builder.And(
                 builder.Eq("GuildId", guildId),
-                builder.Eq("ChannelId", channelId),
-                builder.Eq("EventInfo", eventInfo)
+                builder.Eq("ChannelId", channelId)
                 );
-            var result = await _events.DeleteOneAsync(filter);
-            bool deleted = false;
-            if (result.IsAcknowledged)
-            {
-                deleted = result.DeletedCount > 0;
-            }
-            return deleted;
+
+            List<Data.ScheduledEvent> events = await _events.Find(filter).ToListAsync();
+
+            return events.FirstOrDefault(evt => evt.EventInfo.Equals(eventInfo));
         }
 
-        public async Task<List<Data.ScheduledEvent>> GetGuildEvents(ulong guildId)
+        public async Task<List<Data.ScheduledEvent>> GetGuildEventsAsync(ulong guildId)
         {
             var builder = Builders<Data.ScheduledEvent>.Filter;
             var filter = builder.Eq("GuildId", guildId);
@@ -134,7 +146,7 @@ namespace ReadingsBot
             return events;
         }
 
-        public async Task<List<Data.ScheduledEvent>> GetCurrentEvents()
+        public async Task<List<Data.ScheduledEvent>> GetCurrentEventsAsync()
         {
             //get events where the scheduled event time is in the past
             Instant now = _clock.GetCurrentInstant();
@@ -142,7 +154,7 @@ namespace ReadingsBot
             var filter = builder.Lte("EventInstant", now);
             return await _events.Find(filter).ToListAsync();
         }
-        
+
         private static void LogException(MongoException e)
         {
             LogUtilities.WriteLog(Discord.LogSeverity.Error, e.ToString());

@@ -16,8 +16,8 @@ namespace ReadingsBot.Extensions
                 reactionRemoved = _ => Task.CompletedTask;
 
             var wrap = new ReactionEventWrapper(client, msg);
-            wrap.OnReactionAdded += (r) => { var _ = Task.Run(() => reactionAdded(r)); };
-            wrap.OnReactionRemoved += (r) => { var _ = Task.Run(() => reactionRemoved(r)); };
+            wrap.OnReactionAdded += (r) => { _ = Task.Run(() => reactionAdded(r)); };
+            wrap.OnReactionRemoved += (r) => { _ = Task.Run(() => reactionRemoved(r)); };
             return wrap;
         }
 
@@ -29,24 +29,17 @@ namespace ReadingsBot.Extensions
                 return embed.WithFooter(efb => efb.WithText(curPage.ToString()));
         }
     }
-    public class CommandInfoEqualityComparer: IEqualityComparer<CommandInfo>
+    public class CommandInfoEqualityComparer : IEqualityComparer<CommandInfo>
     {
-        public bool Equals(CommandInfo? cmd1, CommandInfo? cmd2)
+        public bool Equals(CommandInfo? x, CommandInfo? y)
         {
-            if ((cmd1 is null) || (cmd2 is null))
+            if ((x is null) || (y is null))
                 return false;
-            return cmd1.Name.Equals(cmd2.Name);
+            return x.Name.Equals(y.Name);
         }
-        public int GetHashCode(CommandInfo cmd)
+        public int GetHashCode(CommandInfo obj)
         {
-            return cmd.Name.GetHashCode();
+            return obj.Name.GetHashCode();
         }
     }
-
-    public class EmbedWithImage
-    {
-        public EmbedBuilder Builder;
-        public string ImageFile;
-    }
-
 }

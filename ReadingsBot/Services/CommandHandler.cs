@@ -38,10 +38,10 @@ namespace ReadingsBot
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
         {
-            if (s is not SocketUserMessage msg) 
+            if (s is not SocketUserMessage msg)
                 return; //check message is from user/bot
 
-            if (msg.Author.Id == _client.CurrentUser.Id) 
+            if (msg.Author.Id == _client.CurrentUser.Id)
                 return; //ignore self
 
             if (msg.Author.IsBot)
@@ -55,7 +55,7 @@ namespace ReadingsBot
             if (msg.HasStringPrefix(await _guildService.GetGuildPrefix(context.Guild.Id), ref argPos) || msg.HasMentionPrefix(_client.CurrentUser, ref argPos))
             {
                 //Execute command
-                var result = await _commands.ExecuteAsync(context, argPos, _provider);
+                await _commands.ExecuteAsync(context, argPos, _provider);
             }
         }
     }

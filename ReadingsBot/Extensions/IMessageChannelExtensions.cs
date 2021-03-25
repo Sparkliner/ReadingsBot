@@ -34,7 +34,7 @@ namespace ReadingsBot.Extensions
             if (addPaginatedFooter)
                 embed.AddPaginatedFooter(currentPage, lastPage);
 
-            var msg = await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false) as IUserMessage;
+            var msg = await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
 
             if (lastPage == 0)
                 return;
@@ -44,7 +44,7 @@ namespace ReadingsBot.Extensions
 
             await Task.Delay(2000).ConfigureAwait(false);
 
-            var lastPageChange = DateTime.MinValue;
+            DateTime lastPageChange = default(DateTime);
 
             async Task changePage(SocketReaction r)
             {
@@ -64,16 +64,13 @@ namespace ReadingsBot.Extensions
                             toSend.AddPaginatedFooter(currentPage, lastPage);
                         await msg.ModifyAsync(x => x.Embed = toSend.Build()).ConfigureAwait(false);
                     }
-                    else if (r.Emote.Name == arrow_right.Name)
+                    else if (r.Emote.Name == arrow_right.Name && lastPage > currentPage)
                     {
-                        if (lastPage > currentPage)
-                        {
-                            lastPageChange = DateTime.UtcNow;
-                            var toSend = await pageFunc(++currentPage).ConfigureAwait(false);
-                            if (addPaginatedFooter)
-                                toSend.AddPaginatedFooter(currentPage, lastPage);
-                            await msg.ModifyAsync(x => x.Embed = toSend.Build()).ConfigureAwait(false);
-                        }
+                        lastPageChange = DateTime.UtcNow;
+                        var toSend = await pageFunc(++currentPage).ConfigureAwait(false);
+                        if (addPaginatedFooter)
+                            toSend.AddPaginatedFooter(currentPage, lastPage);
+                        await msg.ModifyAsync(x => x.Embed = toSend.Build()).ConfigureAwait(false);
                     }
                 }
                 catch (Exception)

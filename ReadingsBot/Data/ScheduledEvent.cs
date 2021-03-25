@@ -1,7 +1,5 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.IdGenerators;
 using NodaTime;
-using System;
 
 namespace ReadingsBot.Data
 {

@@ -31,7 +31,9 @@ namespace ReadingsBot
         {
             string discordToken = _config["token"];
             if (string.IsNullOrWhiteSpace(discordToken))
+#pragma warning disable S112 // General exceptions should never be thrown
                 throw new Exception("Bot token missing from the environment variables.");
+#pragma warning restore S112 // General exceptions should never be thrown
 
             await _client.LoginAsync(TokenType.Bot, discordToken);
             await _client.StartAsync();

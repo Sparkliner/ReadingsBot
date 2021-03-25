@@ -3,12 +3,13 @@ using Discord.Commands;
 using ReadingsBot.Extensions;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ReadingsBot.Modules
 {
     [Name("Help")]
-    public class HelpModule: ModuleBase<SocketCommandContext>
+    public class HelpModule : ModuleBase<SocketCommandContext>
     {
         private readonly CommandService _commands;
         private readonly GuildService _guildService;
@@ -38,12 +39,11 @@ namespace ReadingsBot.Modules
                 Description = "These are the commands you can use"
             };
 
-            foreach (var module in _commands.Modules)
+            foreach (var module in _commands.Modules.OrderBy(module => module.Name))
             {
-                string description = null;
+                StringBuilder description = new StringBuilder();
 
-                List<CommandInfo> commands = module.Commands.ToList()
-                    .OrderBy(c => c.Aliases[0])
+                List<CommandInfo> commands = module.Commands.OrderBy(c => c.Aliases[0])
                     .Distinct(new CommandInfoEqualityComparer())
                     .ToList();
 
@@ -51,15 +51,17 @@ namespace ReadingsBot.Modules
                 {
                     var result = await cmd.CheckPreconditionsAsync(Context);
                     if (result.IsSuccess)
-                        description += $"{prefix}{cmd.Aliases[0]}\n";
+                        description.Append($"{prefix}{cmd.Aliases[0]}\n");
                 }
 
-                if (!string.IsNullOrWhiteSpace(description))
+                string descString = description.ToString();
+
+                if (!string.IsNullOrWhiteSpace(descString))
                 {
                     builder.AddField(x =>
                     {
                         x.Name = module.Name;
-                        x.Value = description;
+                        x.Value = descString;
                         x.IsInline = false;
                     });
                 }
@@ -71,17 +73,16 @@ namespace ReadingsBot.Modules
         [Command("help")]
         [Summary("Get more information about a command.")]
         [Alias("h", "man")]
-        public async Task HelpAsync([Remainder] [Summary("The name of the command")] string command)
+        public async Task HelpAsync([Remainder][Summary("The name of the command")] string command)
         {
             var result = _commands.Search(Context, command);
 
-            if(!result.IsSuccess)
+            if (!result.IsSuccess)
             {
                 await ReplyAsync($"Sorry, I couldn't find a command like **{command}**.");
                 return;
             }
 
-            //string prefix = await _guildService.GetGuildPrefix(Context.Guild.Id);
             var builder = new EmbedBuilder()
             {
                 Color = _color,

@@ -1,11 +1,9 @@
-﻿using System;
+﻿using Discord;
+using Discord.WebSocket;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text;
-using Discord;
-using Discord.WebSocket;
-using System.Linq;
 
 namespace ReadingsBot
 {
@@ -32,8 +30,10 @@ namespace ReadingsBot
             {
                 if (ScheduleRunnerThread is null || !ScheduleRunnerThread.IsAlive)
                 {
-                    ScheduleRunnerThread = new Thread(ScheduleRunnerThread_Func);
-                    ScheduleRunnerThread.IsBackground = true;
+                    ScheduleRunnerThread = new Thread(ScheduleRunnerThread_Func)
+                    {
+                        IsBackground = true
+                    };
                     ScheduleRunnerThread.Start();
                 }
             });
@@ -51,7 +51,7 @@ namespace ReadingsBot
                 }
                 LogUtilities.WriteLog(LogSeverity.Verbose, "Polling event schedule");
 
-                var eventresult = _schedulingService.GetCurrentEvents();
+                var eventresult = _schedulingService.GetCurrentEventsAsync();
                 eventresult.Wait();
                 List<Data.ScheduledEvent> currentEvents = eventresult.Result;
                 if (!(currentEvents is null) && currentEvents.Any())
@@ -62,16 +62,23 @@ namespace ReadingsBot
                     {
                         ts.Add(new Thread(() =>
                         {
+                            Task? result = default;
                             switch (scheduledEvent.EventInfo)
                             {
                                 case SaintsLivesReadingInfo:
-                                    var result = _readingsPoster.PostLives(scheduledEvent.ChannelId);
-                                    result.Wait();
+                                    result = _readingsPoster.PostLivesAsync(scheduledEvent.ChannelId);
+                                    break;
+                                case BlogsReadingInfo:
+                                    result = _readingsPoster.PostBlogsAsync(scheduledEvent.ChannelId);
                                     break;
                             }
-                            _schedulingService.HandleEventRecurrence(scheduledEvent).Wait();
+                            if (!(result is null))
+                            {
+                                result.Wait();
+                            }
+                            _schedulingService.HandleEventRecurrenceAsync(scheduledEvent).Wait();
                         }));
-                    }  
+                    }
                     foreach (Thread t in ts)
                     {
                         t.Start();
@@ -82,9 +89,8 @@ namespace ReadingsBot
                 {
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"No current events found");
                 }
-                Thread.Sleep(1*60*1000); //sleep for a minute
+                Thread.Sleep(1 * 60 * 1000); //sleep for a minute
             }
-            //LogUtilities.WriteLog(LogSeverity.Warning, $"ScheduleRunnerThread exiting");
         }
     }
 }
