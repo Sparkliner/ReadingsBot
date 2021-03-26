@@ -46,6 +46,11 @@ namespace ReadingsBot.Data
             Author = author;
         }
 
+        public override string ToString()
+        {
+            return $"{BlogName} by {Author}";
+        }
+
         public override bool Equals(object? obj)
         {
             if (obj is BlogId id)

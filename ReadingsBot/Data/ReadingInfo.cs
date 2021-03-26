@@ -41,13 +41,13 @@ namespace ReadingsBot.Data
     public sealed class BlogsReadingInfo : IReadingInfo, IEquatable<BlogsReadingInfo>
     {
         public string Description { get; private set; }
-        public string Blogs => "\n\u2003" + string.Join("\n\u2003", Subscriptions.Select(blogDesc => $"{blogDesc.BlogName} by {blogDesc.Author}"));
-        public List<BlogId> Subscriptions { get; set; }
+        public string Blogs => "\n\u2003" + string.Join("\n\u2003", Subscriptions.Select(sub => sub.BId.ToString()));
+        public List<(BlogId BId, PostId PId)> Subscriptions { get; set; }
                
         public BlogsReadingInfo()
         {
             Description = "Subscribed blogs";
-            Subscriptions = new List<BlogId>();
+            Subscriptions = new List<(BlogId BId, PostId PId)>();
         }
         public override bool Equals(object? obj)
         {

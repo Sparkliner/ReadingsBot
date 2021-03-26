@@ -249,13 +249,13 @@ namespace ReadingsBot.Modules
                             isRecurring: true
                             );
                     }
-                    else if (((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Contains(matchingBlog))
+                    else if (((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Select(sub => sub.BId).Contains(matchingBlog))
                     {
                         await ReplyAsync("This blog is already subscribed to on this channel");
                         return;
                     }
 
-                    ((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Add(matchingBlog);
+                    ((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Add((matchingBlog, default));
 
                     await _scheduleService.ScheduleOrUpdateEventAsync(channelSubEvent);
 
@@ -289,7 +289,7 @@ namespace ReadingsBot.Modules
                     }
                     else
                     {
-                        bool existed = ((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Remove(matchingBlog);
+                        bool existed = ((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.RemoveAll(sub => sub.BId == matchingBlog) > 0;
 
                         if (existed)
                         {

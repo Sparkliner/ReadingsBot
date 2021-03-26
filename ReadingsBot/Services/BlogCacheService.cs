@@ -78,19 +78,27 @@ namespace ReadingsBot
             return _allBlogs;
         }
 
-        public async Task<List<EmbedBuilder>> GetLatestBlogPostEmbedsAsync(List<BlogId> blogs = null)
-        {
-            if (blogs is null)
-                blogs = _allBlogs.Select(b => b.BId).ToList();
-
+        public async Task<List<EmbedBuilder>> GetLatestBlogPostEmbedsAsync(BlogsReadingInfo blogsReading = null)
+        {            
             await UpdateCacheAsync();
-            return LocalCache.Values
-                .Join(blogs,
-                    blogPost => blogPost.BId,
-                    blogId => blogId,
-                    (blogPost, blogId) => blogPost)
-                .Select(blogPost => blogPost.ToEmbed())
-                .ToList();
+            if (blogsReading is null)
+            {
+                return LocalCache.Values
+                    .Select(blogPost => blogPost.ToEmbed())
+                    .ToList();
+            }
+            else
+            {
+                return LocalCache.Values
+                    .Join(blogsReading.Subscriptions,
+                        blogPost => blogPost.BId,
+                        sub => sub.BId,
+                        (blogPost, sub) => new { newPost = blogPost, lastPosted = sub.PId })
+                    .Where(a => a.lastPosted == default 
+                        || OffsetDateTime.Comparer.Instant.Compare(a.lastPosted.PostDateTime, a.newPost.PostDateTime) < 0)
+                    .Select(a => a.newPost.ToEmbed())
+                    .ToList();
+            }
         }
 
         protected override async Task UpdateCacheWebAsync()
