@@ -78,17 +78,17 @@ namespace ReadingsBot
             return _allBlogs;
         }
 
-        public async Task<List<EmbedBuilder>> GetLatestBlogPostEmbedsAsync(List<BlogDescription> blogs = null)
+        public async Task<List<EmbedBuilder>> GetLatestBlogPostEmbedsAsync(List<BlogId> blogs = null)
         {
             if (blogs is null)
-                blogs = _allBlogs;
+                blogs = _allBlogs.Select(b => b.BId).ToList();
 
             await UpdateCacheAsync();
             return LocalCache.Values
                 .Join(blogs,
-                    blogPost => blogPost.BlogName,
-                    blogInfo => blogInfo.BlogName,
-                    (blogPost, blogInfo) => blogPost)
+                    blogPost => blogPost.BId,
+                    blogId => blogId,
+                    (blogPost, blogId) => blogPost)
                 .Select(blogPost => blogPost.ToEmbed())
                 .ToList();
         }
