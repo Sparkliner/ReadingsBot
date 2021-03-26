@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using NodaTime;
+using ReadingsBot.Data;
 using ReadingsBot.Extensions;
 using ReadingsBot.Utilities;
 using System;
