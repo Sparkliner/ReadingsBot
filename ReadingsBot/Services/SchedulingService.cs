@@ -2,6 +2,7 @@
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using NodaTime;
+using ReadingsBot.Data;
 using ReadingsBot.Extensions;
 using System.Collections.Generic;
 using System.Linq;

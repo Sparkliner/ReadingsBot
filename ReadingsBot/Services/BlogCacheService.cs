@@ -136,17 +136,15 @@ namespace ReadingsBot
                         //try to get from meta tag
                         blogImageUrl = await TryGetImageFromPageAsync(blogLink);
                     }
-                    BlogPost blogPost = new BlogPost()
-                    {
-                        BlogName = blogName,
-                        Author = blogItem.Element(blogItem.GetNamespaceOfPrefix("dc") + "creator").Value,
-                        PostDateTime = blogPostDateTime,
-                        PostTitle = blogItem.Element("title").Value,
-                        AuthorImageUrl = blogItem.Element(blogItem.GetNamespaceOfPrefix("media") + "content").Attribute("url").Value,
-                        PostImageUrl = blogImageUrl,
-                        Link = blogLink,
-                        Description = Utilities.TextUtilities.ParseWebText(blogDescription)
-                    };
+                    BlogPost blogPost = new BlogPost( 
+                        blogName: blogName,
+                        author: blogItem.Element(blogItem.GetNamespaceOfPrefix("dc") + "creator").Value,
+                        postTitle: blogItem.Element("title").Value,
+                        postDateTime: blogPostDateTime,
+                        authorImageUrl: blogItem.Element(blogItem.GetNamespaceOfPrefix("media") + "content").Attribute("url").Value,
+                        postImageUrl: blogImageUrl,
+                        link: blogLink,
+                        description: Utilities.TextUtilities.ParseWebText(blogDescription));
 
                     LocalCache[blogName] = blogPost;
                 }
@@ -164,9 +162,11 @@ namespace ReadingsBot
             source = WebUtility.HtmlDecode(source);
             HtmlDocument blogDocument = new HtmlDocument();
             blogDocument.LoadHtml(source);
-            return blogDocument.DocumentNode.Descendants()
-                                                    .First(x => x.Name == "meta" && x.Attributes["property"]?.Value == "og:image")
-                                                    .GetAttributeValue("content", "");
-        }
+            return blogDocument
+                .DocumentNode
+                .Descendants()
+                .First(x => x.Name == "meta" && x.Attributes["property"]?.Value == "og:image")
+                .GetAttributeValue("content", "");
+    }
     }
 }

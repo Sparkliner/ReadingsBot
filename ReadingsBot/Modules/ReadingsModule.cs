@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using NodaTime;
+using ReadingsBot.Data;
 using ReadingsBot.Utilities;
 using System;
 using System.Linq;
@@ -212,55 +213,54 @@ namespace ReadingsBot.Modules
             public virtual async Task SubscribeAsync([Remainder][Summary("Name of the blog, or an alias")] string blogName)
             {
                 //search for the input
-                BlogDescription? matchingBlog = _blogService.GetBlogList()
+                BlogId matchingBlog = _blogService.GetBlogList()
                     .FirstOrDefault(blogInfo =>
                         blogInfo.BlogName.Equals(blogName, StringComparison.OrdinalIgnoreCase)
-                        || blogInfo.Aliases.Contains(blogName, StringComparer.OrdinalIgnoreCase));
+                        || blogInfo.Aliases.Contains(blogName, StringComparer.OrdinalIgnoreCase))
+                    ?.BId ?? default;
 
-                if (matchingBlog is null)
+                if (matchingBlog == default)
                 {
                     await ReplyAsync("Blog name or alias not found in available blogs");
-                    return;
                 }
-
-                //check if this blog is already subscribed to on this channel
-                Data.ScheduledEvent? channelSubEvent = (await _scheduleService.GetGuildEventsAsync(Context.Guild.Id))
-                    .FirstOrDefault(evt =>
-                        evt.ChannelId == Context.Channel.Id
-                        && evt.EventInfo is BlogsReadingInfo);
-
-                if (!(channelSubEvent is null))
+                else
                 {
-                    if ((channelSubEvent.EventInfo as BlogsReadingInfo).Subscriptions.Contains(matchingBlog))
+                    //check if this blog is already subscribed to on this channel
+                    Data.ScheduledEvent? channelSubEvent = (await _scheduleService.GetGuildEventsAsync(Context.Guild.Id))
+                        .FirstOrDefault(evt =>
+                            evt.ChannelId == Context.Channel.Id
+                            && evt.EventInfo is BlogsReadingInfo);
+
+                    if (channelSubEvent is null)
+                    {
+                        DateTimeZone timeZone = await _guildService.GetGuildTimeZone(Context.Guild.Id);
+
+                        ZonedClock zc = new ZonedClock(_clock, timeZone, CalendarSystem.Iso);
+                        LocalDateTime localEventDateTime = zc.GetCurrentLocalDateTime();
+                        localEventDateTime = localEventDateTime.Date + LocalTime.FromHourMinuteSecondTick(localEventDateTime.Hour, 0, 0, 0);
+
+                        ZonedDateTime eventZonedDateTime = localEventDateTime.InZoneLeniently(timeZone);
+                        channelSubEvent = new Data.ScheduledEvent(
+                            Context.Guild.Id,
+                            Context.Channel.Id,
+                            new BlogsReadingInfo(),
+                            eventZonedDateTime,
+                            Period.FromHours(1),
+                            isRecurring: true
+                            );
+                    }
+                    else if (((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Contains(matchingBlog))
                     {
                         await ReplyAsync("This blog is already subscribed to on this channel");
                         return;
                     }
+
+                    ((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Add(matchingBlog);
+
+                    await _scheduleService.ScheduleOrUpdateEventAsync(channelSubEvent);
+
+                    await ReplyAsync($"Added {matchingBlog.BlogName} to the subscriptions for this channel.");
                 }
-                else
-                {
-                    DateTimeZone timeZone = await _guildService.GetGuildTimeZone(Context.Guild.Id);
-
-                    ZonedClock zc = new ZonedClock(_clock, timeZone, CalendarSystem.Iso);
-                    LocalDateTime localEventDateTime = zc.GetCurrentLocalDateTime();
-                    localEventDateTime = localEventDateTime.Date + LocalTime.FromHourMinuteSecondTick(localEventDateTime.Hour, 0, 0, 0);
-
-                    ZonedDateTime eventZonedDateTime = localEventDateTime.InZoneLeniently(timeZone);
-                    channelSubEvent = new Data.ScheduledEvent(
-                        Context.Guild.Id,
-                        Context.Channel.Id,
-                        new BlogsReadingInfo(),
-                        eventZonedDateTime,
-                        Period.FromHours(1),
-                        isRecurring: true
-                        );
-                }
-
-                (channelSubEvent.EventInfo as BlogsReadingInfo).Subscriptions.Add(matchingBlog);
-
-                await _scheduleService.ScheduleOrUpdateEventAsync(channelSubEvent);
-
-                await ReplyAsync($"Added {matchingBlog.BlogName} to the subscriptions for this channel.");
             }
 
             [Command("cancel")]
@@ -268,42 +268,48 @@ namespace ReadingsBot.Modules
             public virtual async Task Cancel([Remainder][Summary("Name of the blog, or an alias")] string blogName)
             {
                 //search for the input
-                BlogDescription? matchingBlog = _blogService.GetBlogList().FirstOrDefault(blogInfo => blogInfo.BlogName.Equals(blogName, StringComparison.OrdinalIgnoreCase) || blogInfo.Aliases.Contains(blogName, StringComparer.OrdinalIgnoreCase));
+                BlogId matchingBlog = _blogService.GetBlogList()
+                    .FirstOrDefault(
+                        blogInfo => blogInfo.BlogName.Equals(blogName, StringComparison.OrdinalIgnoreCase) 
+                        || blogInfo.Aliases.Contains(blogName, StringComparer.OrdinalIgnoreCase))
+                    ?.BId ?? default;
 
-                if (matchingBlog is null)
+                if (matchingBlog == default)
                 {
                     await ReplyAsync("Blog name or alias not found in available blogs");
-                    return;
-                }
-
-                //check if this blog is already subscribed to on this channel
-                Data.ScheduledEvent? channelSubEvent = (await _scheduleService.GetGuildEventsAsync(Context.Guild.Id)).FirstOrDefault(evt => evt.ChannelId == Context.Channel.Id && evt.EventInfo is BlogsReadingInfo);
-
-                if (channelSubEvent is null)
-                {
-                    await ReplyAsync("There are no blog subscriptions on this channel");
-                    return;
-                }
-
-                if (!(channelSubEvent.EventInfo as BlogsReadingInfo).Subscriptions.Contains(matchingBlog))
-                {
-                    await ReplyAsync("This blog is not subscribed to on this channel");
-                    return;
-                }
-
-                (channelSubEvent.EventInfo as BlogsReadingInfo).Subscriptions.Remove(matchingBlog);
-
-                if (!(channelSubEvent.EventInfo as BlogsReadingInfo).Subscriptions.Any())
-                {
-                    await _scheduleService.DeleteScheduledEventAsync(Context.Guild.Id, Context.Channel.Id, channelSubEvent.EventInfo as BlogsReadingInfo);
                 }
                 else
                 {
-                    await _scheduleService.ScheduleOrUpdateEventAsync(channelSubEvent);
+                    //check if this blog is already subscribed to on this channel
+                    Data.ScheduledEvent? channelSubEvent = (await _scheduleService.GetGuildEventsAsync(Context.Guild.Id)).FirstOrDefault(evt => evt.ChannelId == Context.Channel.Id && evt.EventInfo is BlogsReadingInfo);
+
+                    if (channelSubEvent is null)
+                    {
+                        await ReplyAsync("There are no blog subscriptions on this channel");
+                    }
+                    else
+                    {
+                        bool existed = ((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Remove(matchingBlog);
+
+                        if (existed)
+                        {
+                            if (!((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Any())
+                            {
+                                await _scheduleService.DeleteScheduledEventAsync(Context.Guild.Id, Context.Channel.Id, channelSubEvent.EventInfo as BlogsReadingInfo);
+                            }
+                            else
+                            {
+                                await _scheduleService.ScheduleOrUpdateEventAsync(channelSubEvent);
+                            }
+
+                            await ReplyAsync($"Removed {matchingBlog.BlogName} from the subscriptions for this channel.");
+                        }
+                        else
+                        {
+                            await ReplyAsync("This blog is not subscribed to on this channel");
+                        }
+                    }
                 }
-
-                await ReplyAsync($"Removed {matchingBlog.BlogName} from the subscriptions for this channel.");
-
             }
 
             [Command("now")]

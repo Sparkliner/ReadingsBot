@@ -1,18 +1,32 @@
 ﻿using Discord;
 using NodaTime;
+using System;
+using System.Text;
 
 namespace ReadingsBot.Data
 {
-    public class BlogPost
+    public sealed class BlogPost : IEquatable<BlogPost>
     {
-        public string BlogName { get; set; }
-        public OffsetDateTime PostDateTime { get; set; }
-        public string PostTitle { get; set; }
-        public string Author { get; set; }
-        public string AuthorImageUrl { get; set; }
-        public string PostImageUrl { get; set; }
-        public string Link { get; set; }
-        public string Description { get; set; }
+        public BlogId BId { get; }
+        public PostId PId { get; }
+        public string BlogName => BId.BlogName;
+        public string Author => BId.Author;
+        public string PostTitle => PId.PostTitle;
+        public OffsetDateTime PostDateTime => PId.PostDateTime;       
+        public string AuthorImageUrl { get; }
+        public string PostImageUrl { get; }
+        public string Link { get; }
+        public string Description { get; }
+
+        public BlogPost(string blogName, string author, string postTitle, OffsetDateTime postDateTime, string authorImageUrl, string postImageUrl, string link, string description)
+        {
+            BId = new BlogId(blogName, author);
+            PId = new PostId(postTitle, postDateTime);
+            AuthorImageUrl = authorImageUrl;
+            PostImageUrl = postImageUrl;
+            Link = link;
+            Description = description;
+        }
 
         public EmbedBuilder ToEmbed()
         {
@@ -25,7 +39,6 @@ namespace ReadingsBot.Data
             }
             .WithDescription(this.Description)
             .WithFooter(footer => footer.Text = Utilities.TextUtilities.ParseWebText($"&copy; {this.Author}"));
-            //just going to hardcode the copyright because I can't be bothered right now
 
             if (!string.IsNullOrWhiteSpace(this.PostImageUrl))
             {
@@ -33,6 +46,75 @@ namespace ReadingsBot.Data
             }
 
             return builder;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is BlogPost post)
+            {
+                return this.Equals(post);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool Equals(BlogPost? other)
+        {
+            if (other is null)
+                return false;
+
+            return this.BId == other.BId && this.PId == other.PId;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine<BlogId, PostId>(BId, PId);
+        }
+    }
+
+    public readonly struct PostId : IEquatable<PostId>
+    {
+        public string PostTitle { get; }
+        public OffsetDateTime PostDateTime { get; }
+        
+        public PostId(string postTitle, OffsetDateTime postDateTime)
+        {
+            PostTitle = postTitle;
+            PostDateTime = postDateTime;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is PostId id)
+            {
+                return this.Equals(id);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool Equals(PostId other)
+        {
+            return this.PostTitle == other.PostTitle && this.PostDateTime.Equals(other.PostDateTime);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine<string, OffsetDateTime>(PostTitle, PostDateTime);
+        }
+
+        public static bool operator ==(PostId left, PostId right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(PostId left, PostId right)
+        {
+            return !(left == right);
         }
     }
 }
