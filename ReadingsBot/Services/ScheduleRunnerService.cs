@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using ReadingsBot.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -63,19 +64,18 @@ namespace ReadingsBot
                     {
                         ts.Add(new Thread(() =>
                         {
-                            Task? result = default;
                             switch (scheduledEvent.EventInfo)
                             {
                                 case SaintsLivesReadingInfo:
-                                    result = _readingsPoster.PostLivesAsync(scheduledEvent.ChannelId);
+                                    _readingsPoster.PostLivesAsync(scheduledEvent.ChannelId).Wait();
                                     break;
-                                case BlogsReadingInfo:
-                                    result = _readingsPoster.PostBlogsAsync(scheduledEvent.ChannelId);
+                                case BlogsReadingInfo blogsReading:
+                                    var blogsTask = _readingsPoster.PostBlogsAsync(scheduledEvent.ChannelId, blogsReading);
+                                    //get new subs from result and update blog subscriptions
+                                    blogsTask.Wait();
+                                    var newSubs = blogsTask.Result;
+                                    ((BlogsReadingInfo)scheduledEvent.EventInfo).Subscriptions = newSubs;
                                     break;
-                            }
-                            if (!(result is null))
-                            {
-                                result.Wait();
                             }
                             _schedulingService.HandleEventRecurrenceAsync(scheduledEvent).Wait();
                         }));
