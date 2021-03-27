@@ -30,12 +30,14 @@ namespace ReadingsBot
                 channelId);
         }
 
-        public async Task PostBlogsAsync(ulong channelId)
+        public async Task<List<(BlogId BId, PostId PId)>> PostBlogsAsync(ulong channelId, BlogsReadingInfo blogsReading = null)
         {
+            var (embeds, newSubs) = await _blogs.GetLatestBlogPostEmbedsAsync(blogsReading);
             await PostBulkEmbedAsync(
                 Modules.ReadingsModule.GetColor(),
-                await _blogs.GetLatestBlogPostEmbedsAsync(),
+                embeds,
                 channelId);
+            return newSubs;
         }
 
         private async Task PostBulkEmbedAsync(Color color, List<EmbedBuilder> embeds, ulong channelId)

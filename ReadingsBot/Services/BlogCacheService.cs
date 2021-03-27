@@ -78,26 +78,29 @@ namespace ReadingsBot
             return _allBlogs;
         }
 
-        public async Task<List<EmbedBuilder>> GetLatestBlogPostEmbedsAsync(BlogsReadingInfo blogsReading = null)
+        public async Task<(List<EmbedBuilder> embeds, List<(BlogId BId, PostId PId)> newSubs)> GetLatestBlogPostEmbedsAsync(BlogsReadingInfo blogsReading = null)
         {            
             await UpdateCacheAsync();
             if (blogsReading is null)
             {
-                return LocalCache.Values
+                var embeds = LocalCache.Values
                     .Select(blogPost => blogPost.ToEmbed())
                     .ToList();
+                return (embeds, null);
             }
             else
             {
-                return LocalCache.Values
+                var temp = LocalCache.Values
                     .Join(blogsReading.Subscriptions,
                         blogPost => blogPost.BId,
                         sub => sub.BId,
                         (blogPost, sub) => new { newPost = blogPost, lastPosted = sub.PId })
-                    .Where(a => a.lastPosted == default 
-                        || OffsetDateTime.Comparer.Instant.Compare(a.lastPosted.PostDateTime, a.newPost.PostDateTime) < 0)
-                    .Select(a => a.newPost.ToEmbed())
-                    .ToList();
+                    .Where(a => a.lastPosted == default
+                        || OffsetDateTime.Comparer.Instant.Compare(
+                            a.lastPosted.PostDateTime, a.newPost.PostDateTime) < 0);
+                var embeds = temp.Select(a => a.newPost.ToEmbed()).ToList();
+                var newSubs = temp.Select(a => (a.newPost.BId, a.newPost.PId)).ToList();
+                return (embeds, newSubs);
             }
         }
 
