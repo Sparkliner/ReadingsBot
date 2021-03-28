@@ -245,8 +245,7 @@ namespace ReadingsBot.Modules
                             Context.Channel.Id,
                             new BlogsReadingInfo(),
                             eventZonedDateTime,
-                            //Period.FromHours(1),
-                            Period.FromMinutes(1),
+                            Period.FromHours(1),
                             isRecurring: true
                             );
                     }
