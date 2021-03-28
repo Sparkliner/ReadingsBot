@@ -217,9 +217,9 @@ namespace ReadingsBot.Modules
                     .FirstOrDefault(blogInfo =>
                         blogInfo.BlogName.Equals(blogName, StringComparison.OrdinalIgnoreCase)
                         || blogInfo.Aliases.Contains(blogName, StringComparer.OrdinalIgnoreCase))
-                    ?.BId ?? default;
+                    ?.BId;
 
-                if (matchingBlog == default)
+                if (matchingBlog is null)
                 {
                     await ReplyAsync("Blog name or alias not found in available blogs");
                 }
@@ -237,7 +237,7 @@ namespace ReadingsBot.Modules
 
                         ZonedClock zc = new ZonedClock(_clock, timeZone, CalendarSystem.Iso);
                         LocalDateTime localEventDateTime = zc.GetCurrentLocalDateTime();
-                        localEventDateTime = localEventDateTime.Date + LocalTime.FromHourMinuteSecondTick(localEventDateTime.Hour, 0, 0, 0);
+                        localEventDateTime = localEventDateTime.With(TimeAdjusters.TruncateToHour);
 
                         ZonedDateTime eventZonedDateTime = localEventDateTime.InZoneLeniently(timeZone);
                         channelSubEvent = new Data.ScheduledEvent(
@@ -245,7 +245,8 @@ namespace ReadingsBot.Modules
                             Context.Channel.Id,
                             new BlogsReadingInfo(),
                             eventZonedDateTime,
-                            Period.FromHours(1),
+                            //Period.FromHours(1),
+                            Period.FromMinutes(1),
                             isRecurring: true
                             );
                     }
@@ -255,7 +256,7 @@ namespace ReadingsBot.Modules
                         return;
                     }
 
-                    ((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Add((matchingBlog, default));
+                    ((BlogsReadingInfo)channelSubEvent.EventInfo).Subscriptions.Add(new BlogSubscription(matchingBlog, default));
 
                     await _scheduleService.ScheduleOrUpdateEventAsync(channelSubEvent);
 
@@ -272,9 +273,9 @@ namespace ReadingsBot.Modules
                     .FirstOrDefault(
                         blogInfo => blogInfo.BlogName.Equals(blogName, StringComparison.OrdinalIgnoreCase) 
                         || blogInfo.Aliases.Contains(blogName, StringComparer.OrdinalIgnoreCase))
-                    ?.BId ?? default;
+                    ?.BId;
 
-                if (matchingBlog == default)
+                if (matchingBlog is null)
                 {
                     await ReplyAsync("Blog name or alias not found in available blogs");
                 }

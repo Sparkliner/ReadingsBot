@@ -30,7 +30,7 @@ namespace ReadingsBot
                 channelId);
         }
 
-        public async Task<List<(BlogId BId, PostId PId)>> PostBlogsAsync(ulong channelId, BlogsReadingInfo blogsReading = null)
+        public async Task<List<BlogSubscription>> PostBlogsAsync(ulong channelId, BlogsReadingInfo blogsReading = null)
         {
             var (embeds, newSubs) = await _blogs.GetLatestBlogPostEmbedsAsync(blogsReading);
             await PostBulkEmbedAsync(

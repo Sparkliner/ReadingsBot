@@ -35,7 +35,7 @@ namespace ReadingsBot.Data
         }
     }
 
-    public readonly struct BlogId : IEquatable<BlogId>
+    public sealed class BlogId : IEquatable<BlogId>
     {
         public string BlogName { get; }
         public string Author { get; }
@@ -65,6 +65,8 @@ namespace ReadingsBot.Data
 
         public bool Equals(BlogId other)
         {
+            if (other is null)
+                return false;
             return this.BlogName == other.BlogName && this.Author == other.Author;
         }
 
@@ -75,11 +77,15 @@ namespace ReadingsBot.Data
 
         public static bool operator ==(BlogId left, BlogId right)
         {
+            if (left is null || right is null)
+                return false;
             return left.Equals(right);
         }
 
         public static bool operator !=(BlogId left, BlogId right)
         {
+            if (left is null || right is null)
+                return false;
             return !(left == right);
         }
     }

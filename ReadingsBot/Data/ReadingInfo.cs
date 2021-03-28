@@ -42,12 +42,12 @@ namespace ReadingsBot.Data
     {
         public string Description { get; private set; }
         public string Blogs => "\n\u2003" + string.Join("\n\u2003", Subscriptions.Select(sub => sub.BId.ToString()));
-        public List<(BlogId BId, PostId PId)> Subscriptions { get; set; }
+        public List<BlogSubscription> Subscriptions { get; set; }
                
         public BlogsReadingInfo()
         {
             Description = "Subscribed blogs";
-            Subscriptions = new List<(BlogId BId, PostId PId)>();
+            Subscriptions = new List<BlogSubscription>();
         }
         public override bool Equals(object? obj)
         {

@@ -77,7 +77,7 @@ namespace ReadingsBot
                                     ((BlogsReadingInfo)scheduledEvent.EventInfo).Subscriptions = newSubs;
                                     break;
                             }
-                            _schedulingService.HandleEventRecurrenceAsync(scheduledEvent).Wait();
+                            _schedulingService.UpdateEventDataAsync(scheduledEvent).Wait();
                         }));
                     }
                     foreach (Thread t in ts)

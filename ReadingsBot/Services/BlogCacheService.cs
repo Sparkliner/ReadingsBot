@@ -13,10 +13,12 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using NodaTime.Serialization.SystemTextJson;
+using NodaTime.TimeZones;
 
 namespace ReadingsBot
 {
-    public class BlogCacheService : JsonCacheService<Dictionary<string, BlogPost>>
+    public class BlogCacheService : JsonCacheService<BlogCache>
     {
         private readonly HttpClient _httpClient;
 
@@ -27,7 +29,7 @@ namespace ReadingsBot
                   clock,
                   "/cache/Blogs/",
                   "latest_posts.json",
-                  new JsonSerializerOptions(),
+                  new JsonSerializerOptions().ConfigureForNodaTime(DateTimeZoneProviders.Tzdb),
                   DateTimeZoneProviders.Tzdb["UTC"])
         {
             _httpClient = httpClient;
@@ -69,8 +71,7 @@ namespace ReadingsBot
 
         protected override void UpdateCacheDate()
         {
-            LocalDateTime now = CacheClock.GetCurrentLocalDateTime();
-            CacheLastUpdatedTime = now.Date + new LocalTime(now.Hour, 0);
+            CacheLastUpdatedTime = LocalCache.LastUpdated.LocalDateTime;
         }
 
         public List<BlogDescription> GetBlogList()
@@ -78,35 +79,35 @@ namespace ReadingsBot
             return _allBlogs;
         }
 
-        public async Task<(List<EmbedBuilder> embeds, List<(BlogId BId, PostId PId)> newSubs)> GetLatestBlogPostEmbedsAsync(BlogsReadingInfo blogsReading = null)
+        public async Task<(List<EmbedBuilder> embeds, List<BlogSubscription> newSubs)> GetLatestBlogPostEmbedsAsync(BlogsReadingInfo blogsReading = null)
         {            
             await UpdateCacheAsync();
             if (blogsReading is null)
             {
-                var embeds = LocalCache.Values
+                var embeds = LocalCache.Cache.Values
                     .Select(blogPost => blogPost.ToEmbed())
                     .ToList();
                 return (embeds, null);
             }
             else
             {
-                var temp = LocalCache.Values
+                var temp = LocalCache.Cache.Values
                     .Join(blogsReading.Subscriptions,
                         blogPost => blogPost.BId,
                         sub => sub.BId,
                         (blogPost, sub) => new { newPost = blogPost, lastPosted = sub.PId })
-                    .Where(a => a.lastPosted == default
-                        || OffsetDateTime.Comparer.Instant.Compare(
-                            a.lastPosted.PostDateTime, a.newPost.PostDateTime) < 0);
+                    .Where(a => a.lastPosted is null
+                        || a.lastPosted.PostDateTime < a.newPost.PostDateTime);
                 var embeds = temp.Select(a => a.newPost.ToEmbed()).ToList();
-                var newSubs = temp.Select(a => (a.newPost.BId, a.newPost.PId)).ToList();
+                var newSubs = temp.Select(a => new BlogSubscription(a.newPost.BId, a.newPost.PId)).ToList();
                 return (embeds, newSubs);
             }
         }
 
         protected override async Task UpdateCacheWebAsync()
         {
-            LocalCache = new Dictionary<string, BlogPost>();
+            if (LocalCache is null)
+                LocalCache = new BlogCache();
             var groupedBlogs = _allBlogs.GroupBy<BlogDescription, string>(x => x.RssFeedUrl);
 
             foreach (var group in groupedBlogs)
@@ -134,7 +135,7 @@ namespace ReadingsBot
                         .Parse(blogItem.Element("pubDate").Value).Value;
 
                     //check that we don't already have a later post
-                    if (LocalCache.ContainsKey(blogName) && OffsetDateTime.Comparer.Instant.Compare(LocalCache[blogName].PostDateTime, blogPostDateTime) >= 0)
+                    if (LocalCache.Cache.ContainsKey(blogName) && LocalCache.Cache[blogName].PostDateTime >= blogPostDateTime.ToInstant())
                     {
                         continue;
                     }
@@ -157,9 +158,12 @@ namespace ReadingsBot
                         link: blogLink,
                         description: Utilities.TextUtilities.ParseWebText(blogDescription));
 
-                    LocalCache[blogName] = blogPost;
+                    LocalCache.Cache[blogName] = blogPost;
                 }
             }
+            //populate date field for writing to disk
+            LocalDateTime now = CacheClock.GetCurrentLocalDateTime();
+            LocalCache.LastUpdated = now.With(TimeAdjusters.TruncateToHour).InZoneLeniently(CacheTimeZone);
             await WriteCacheToDiskAsync();
         }
 

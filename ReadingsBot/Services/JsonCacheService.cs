@@ -28,6 +28,7 @@ namespace ReadingsBot
             JsonCacheDirectory = string.Join("/", _config["data_directory"], cacheDir);
             JsonFileName = string.Join("/", JsonCacheDirectory, cacheFile);
             JsonOptions = options;
+            JsonOptions.WriteIndented = true;
             CacheTimeZone = timeZone;
             CacheClock = new ZonedClock(clock, timeZone, CalendarSystem.Iso);
         }
@@ -41,6 +42,7 @@ namespace ReadingsBot
                 {
                     LogUtilities.WriteLog(LogSeverity.Verbose, "Loading cache from disk");
                     LoadToCache(File.ReadAllText(JsonFileName));
+                    UpdateCacheDate();
                 }
                 else
                 {
@@ -74,7 +76,7 @@ namespace ReadingsBot
                 JsonFileName,
                 JsonSerializer.Serialize(
                     LocalCache,
-                    options: new JsonSerializerOptions { WriteIndented = true }));
+                    JsonOptions));
         }
 
         protected abstract Task UpdateCacheWebAsync();

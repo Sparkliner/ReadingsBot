@@ -82,8 +82,9 @@ namespace ReadingsBot
             return rescheduled;
         }
 
-        public async Task HandleEventRecurrenceAsync(Data.ScheduledEvent scheduledEvent)
+        public async Task UpdateEventDataAsync(Data.ScheduledEvent scheduledEvent)
         {
+            //add flag to update subscription fields, etc.
             if (!scheduledEvent.IsRecurring)
             {
                 await DeleteScheduledEventAsync(scheduledEvent.GuildId, scheduledEvent.GuildId, scheduledEvent.EventInfo);
@@ -99,6 +100,14 @@ namespace ReadingsBot
 
                 var update = Builders<Data.ScheduledEvent>.Update
                     .Set("EventInstant", nextEventInstant);
+
+                //this should probably be handled somewhere else
+                switch(scheduledEvent.EventInfo)
+                {
+                    case BlogsReadingInfo blogsReading:
+                        update = update.Set("EventInfo.Subscriptions", blogsReading.Subscriptions);
+                        break;
+                }
 
                 await _events.UpdateOneAsync(filter, update);
             }

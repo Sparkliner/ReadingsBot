@@ -2,6 +2,7 @@
 using NodaTime;
 using System;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace ReadingsBot.Data
 {
@@ -9,10 +10,14 @@ namespace ReadingsBot.Data
     {
         public BlogId BId { get; }
         public PostId PId { get; }
+        [JsonIgnore]
         public string BlogName => BId.BlogName;
+        [JsonIgnore]
         public string Author => BId.Author;
+        [JsonIgnore]
         public string PostTitle => PId.PostTitle;
-        public OffsetDateTime PostDateTime => PId.PostDateTime;       
+        [JsonIgnore]
+        public Instant PostDateTime => PId.PostDateTime;
         public string AuthorImageUrl { get; }
         public string PostImageUrl { get; }
         public string Link { get; }
@@ -21,7 +26,18 @@ namespace ReadingsBot.Data
         public BlogPost(string blogName, string author, string postTitle, OffsetDateTime postDateTime, string authorImageUrl, string postImageUrl, string link, string description)
         {
             BId = new BlogId(blogName, author);
-            PId = new PostId(postTitle, postDateTime);
+            PId = new PostId(postTitle, postDateTime.ToInstant());
+            AuthorImageUrl = authorImageUrl;
+            PostImageUrl = postImageUrl;
+            Link = link;
+            Description = description;
+        }
+
+        [JsonConstructor]
+        public BlogPost(BlogId bId, PostId pId, string authorImageUrl, string postImageUrl, string link, string description)
+        {
+            BId = bId;
+            PId = pId;
             AuthorImageUrl = authorImageUrl;
             PostImageUrl = postImageUrl;
             Link = link;
@@ -74,12 +90,12 @@ namespace ReadingsBot.Data
         }
     }
 
-    public readonly struct PostId : IEquatable<PostId>
+    public sealed class PostId : IEquatable<PostId>
     {
         public string PostTitle { get; }
-        public OffsetDateTime PostDateTime { get; }
+        public Instant PostDateTime { get; }
         
-        public PostId(string postTitle, OffsetDateTime postDateTime)
+        public PostId(string postTitle, Instant postDateTime)
         {
             PostTitle = postTitle;
             PostDateTime = postDateTime;
@@ -99,21 +115,27 @@ namespace ReadingsBot.Data
 
         public bool Equals(PostId other)
         {
+            if (other is null)
+                return false;
             return this.PostTitle == other.PostTitle && this.PostDateTime.Equals(other.PostDateTime);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine<string, OffsetDateTime>(PostTitle, PostDateTime);
+            return HashCode.Combine<string, Instant>(PostTitle, PostDateTime);
         }
 
         public static bool operator ==(PostId left, PostId right)
         {
+            if (left is null || right is null)
+                return false;
             return left.Equals(right);
         }
 
         public static bool operator !=(PostId left, PostId right)
         {
+            if (left is null || right is null)
+                return false;
             return !(left == right);
         }
     }
