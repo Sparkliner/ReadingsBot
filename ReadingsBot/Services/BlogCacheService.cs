@@ -172,6 +172,13 @@ namespace ReadingsBot
                         LocalCache.Cache[blogName] = new List<BlogPost>();
                     }
                     LocalCache.Cache[blogName].Add(blogPost);
+
+                    //prune the cache here
+                    int maxCacheSize = int.Parse(_config["blog_cache_size"]);
+                    if (LocalCache.Cache[blogName].Count > maxCacheSize)
+                    {
+                        LocalCache.Cache[blogName] = LocalCache.Cache[blogName].OrderByDescending(p => p.PostDateTime).Take(maxCacheSize).ToList();
+                    }
                 }
             }
             //populate date field for writing to disk
