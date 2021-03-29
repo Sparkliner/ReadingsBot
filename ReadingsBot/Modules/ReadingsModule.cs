@@ -270,7 +270,7 @@ namespace ReadingsBot.Modules
                 //search for the input
                 BlogId matchingBlog = _blogService.GetBlogList()
                     .FirstOrDefault(
-                        blogInfo => blogInfo.BlogName.Equals(blogName, StringComparison.OrdinalIgnoreCase) 
+                        blogInfo => blogInfo.BlogName.Equals(blogName, StringComparison.OrdinalIgnoreCase)
                         || blogInfo.Aliases.Contains(blogName, StringComparer.OrdinalIgnoreCase))
                     ?.BId;
 

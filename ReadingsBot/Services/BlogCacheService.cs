@@ -79,7 +79,7 @@ namespace ReadingsBot
         }
 
         public async Task<(List<EmbedBuilder> embeds, List<BlogSubscription> newSubs)> GetLatestBlogPostEmbedsAsync(BlogsReadingInfo blogsReading = null)
-        {            
+        {
             await UpdateCacheAsync();
             if (blogsReading is null)
             {
@@ -101,7 +101,7 @@ namespace ReadingsBot
                         || a.lastPosted.PostDateTime < a.newPost.PostDateTime);
                 var embeds = temp.OrderBy(a => a.newPost.BlogName).ThenBy(a => a.newPost.PostDateTime).Select(a => a.newPost.ToEmbed());
                 var newSubs = temp.GroupBy(a => a.newPost.BId)
-                    .Select(g => 
+                    .Select(g =>
                         new BlogSubscription(
                             g.Key,
                             g.OrderByDescending(a => a.newPost.PostDateTime)
@@ -157,7 +157,7 @@ namespace ReadingsBot
                         //try to get from meta tag
                         blogImageUrl = await TryGetImageFromPageAsync(blogLink);
                     }
-                    BlogPost blogPost = new BlogPost( 
+                    BlogPost blogPost = new BlogPost(
                         blogName: blogName,
                         author: blogItem.Element(blogItem.GetNamespaceOfPrefix("dc") + "creator").Value,
                         postTitle: blogItem.Element("title").Value,
@@ -202,6 +202,6 @@ namespace ReadingsBot
                 .Descendants()
                 .First(x => x.Name == "meta" && x.Attributes["property"]?.Value == "og:image")
                 .GetAttributeValue("content", "");
-    }
+        }
     }
 }

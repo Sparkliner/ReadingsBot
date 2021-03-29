@@ -102,7 +102,7 @@ namespace ReadingsBot
                     .Set("EventInstant", nextEventInstant);
 
                 //this should probably be handled somewhere else
-                switch(scheduledEvent.EventInfo)
+                switch (scheduledEvent.EventInfo)
                 {
                     case BlogsReadingInfo blogsReading:
                         update = update.Set("EventInfo.Subscriptions", blogsReading.Subscriptions);
