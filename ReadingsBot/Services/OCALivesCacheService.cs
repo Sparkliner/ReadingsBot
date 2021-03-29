@@ -43,10 +43,7 @@ namespace ReadingsBot
             string json_string = await GetLivesWeb();
             //store in memory and update date
             LoadToCache(json_string);
-            Task imageCacheTask = DownloadAndCacheImages();
-            //store to disk
-            Task writeDiskTask = WriteCacheToDiskAsync();
-            await Task.WhenAll(imageCacheTask, writeDiskTask);
+            await DownloadAndCacheImages().ContinueWith(task => WriteCacheToDiskAsync());
         }
 
         private async Task DownloadAndCacheImages()
