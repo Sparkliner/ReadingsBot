@@ -2,6 +2,7 @@
 using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
 using NodaTime;
+using NodaTime.Serialization.SystemTextJson;
 using NodaTime.Text;
 using ReadingsBot.Data;
 using System.Collections.Generic;
@@ -13,8 +14,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using NodaTime.Serialization.SystemTextJson;
-using NodaTime.TimeZones;
 
 namespace ReadingsBot
 {
@@ -85,6 +84,7 @@ namespace ReadingsBot
             if (blogsReading is null)
             {
                 var embeds = LocalCache.Cache.Values
+                    .SelectMany(list => list)
                     .Select(blogPost => blogPost.ToEmbed())
                     .ToList();
                 return (embeds, null);
@@ -92,15 +92,21 @@ namespace ReadingsBot
             else
             {
                 var temp = LocalCache.Cache.Values
+                    .SelectMany(list => list)
                     .Join(blogsReading.Subscriptions,
                         blogPost => blogPost.BId,
                         sub => sub.BId,
                         (blogPost, sub) => new { newPost = blogPost, lastPosted = sub.PId })
                     .Where(a => a.lastPosted is null
                         || a.lastPosted.PostDateTime < a.newPost.PostDateTime);
-                var embeds = temp.Select(a => a.newPost.ToEmbed()).ToList();
-                var newSubs = temp.Select(a => new BlogSubscription(a.newPost.BId, a.newPost.PId)).ToList();
-                return (embeds, newSubs);
+                var embeds = temp.OrderBy(a => a.newPost.BlogName).ThenBy(a => a.newPost.PostDateTime).Select(a => a.newPost.ToEmbed());
+                var newSubs = temp.GroupBy(a => a.newPost.BId)
+                    .Select(g => 
+                        new BlogSubscription(
+                            g.Key,
+                            g.OrderByDescending(a => a.newPost.PostDateTime)
+                                .First().newPost.PId));
+                return (embeds.ToList(), newSubs.ToList());
             }
         }
 
@@ -130,12 +136,15 @@ namespace ReadingsBot
                 foreach (var blogItem in blogItems)
                 {
                     string blogName = blogItem.Element("category").Value;
+
+                    string postTitle = blogItem.Element("title").Value;
+
                     OffsetDateTime blogPostDateTime = OffsetDateTimePattern
                         .CreateWithInvariantCulture("ddd, dd MMM uuuu HH:mm:ss o<M>")
                         .Parse(blogItem.Element("pubDate").Value).Value;
 
-                    //check that we don't already have a later post
-                    if (LocalCache.Cache.ContainsKey(blogName) && LocalCache.Cache[blogName].PostDateTime >= blogPostDateTime.ToInstant())
+                    //check that we don't already have this post
+                    if (LocalCache.Cache.ContainsKey(blogName) && LocalCache.Cache[blogName].Any(post => post.PId == new PostId(postTitle, blogPostDateTime.ToInstant())))
                     {
                         continue;
                     }
@@ -158,7 +167,11 @@ namespace ReadingsBot
                         link: blogLink,
                         description: Utilities.TextUtilities.ParseWebText(blogDescription));
 
-                    LocalCache.Cache[blogName] = blogPost;
+                    if (!LocalCache.Cache.ContainsKey(blogName))
+                    {
+                        LocalCache.Cache[blogName] = new List<BlogPost>();
+                    }
+                    LocalCache.Cache[blogName].Add(blogPost);
                 }
             }
             //populate date field for writing to disk
