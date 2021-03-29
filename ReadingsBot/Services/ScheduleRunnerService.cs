@@ -72,7 +72,6 @@ namespace ReadingsBot
                                 case BlogsReadingInfo blogsReading:
                                     var blogsTask = _readingsPoster.PostBlogsAsync(scheduledEvent.ChannelId, blogsReading);
                                     //get new subs from result and update blog subscriptions
-                                    blogsTask.Wait();
                                     var newSubs = blogsTask.Result;
                                     ((BlogsReadingInfo)scheduledEvent.EventInfo).Subscriptions = newSubs;
                                     break;
