@@ -33,7 +33,7 @@ namespace ReadingsBot
                 cancellationToken = new CancellationTokenSource();
                 ScheduleRunnerTask = Task.Run(async () => await ScheduleRunnerAsync());
             }
-            
+
             return Task.CompletedTask;
         }
 
@@ -48,7 +48,7 @@ namespace ReadingsBot
                     continue;
                 }
                 LogUtilities.WriteLog(LogSeverity.Verbose, "Polling event schedule");
-                
+
                 List<Data.ScheduledEvent> currentEvents = await _schedulingService.GetCurrentEventsAsync();
 
                 if (!(currentEvents is null) && currentEvents.Any())
@@ -66,7 +66,7 @@ namespace ReadingsBot
                             case BlogsReadingInfo blogsReading:
                                 var blogsTask = _readingsPoster.PostBlogsAsync(scheduledEvent.ChannelId, blogsReading);
                                 //get new subs from result and update blog subscriptions
-                                nextTask = blogsTask.ContinueWith(previousTask => 
+                                nextTask = blogsTask.ContinueWith(previousTask =>
                                     ((BlogsReadingInfo)scheduledEvent.EventInfo).Subscriptions = previousTask.Result);
                                 break;
                             default:

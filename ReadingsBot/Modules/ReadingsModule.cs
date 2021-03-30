@@ -13,15 +13,14 @@ namespace ReadingsBot.Modules
     [Summary("Commands related to specific readings.")]
     [RequireContext(ContextType.Guild, Group = "Context")]
     [RequireUserPermission(ChannelPermission.ManageMessages, Group = "Permission")]
-    public class ReadingsModule : ModuleBase<SocketCommandContext>
+    public class ReadingsModule : ColorModule
     {
+        public ReadingsModule()
+            : base(new Color(135, 216, 112))
+        { }
 
-        private static readonly Color _color = new Color(135, 216, 112);
-
-        public static Color GetColor()
-        {
-            return _color;
-        }
+        //terrible solution
+        public static Color GetEmbedColor { get; } = new(135, 216, 112);
 
         //class for content that updates exactly once per day
         public abstract class DailyPostModule : ModuleBase<SocketCommandContext>
@@ -151,7 +150,7 @@ namespace ReadingsBot.Modules
 
         //class for content that updates exactly once per day
         [Group("blogs"), Name("Blog Posting")]
-        public class BlogPostModule : ModuleBase<SocketCommandContext>
+        public class BlogPostModule : InfoEmbedModule
         {
             protected readonly SchedulingService _scheduleService;
             protected readonly GuildService _guildService;
@@ -164,7 +163,9 @@ namespace ReadingsBot.Modules
                 GuildService guildService,
                 ReadingsPostingService readingsPoster,
                 BlogCacheService blogService,
-                IClock clock)
+                IClock clock,
+                ReadingsBotVersionInfo versionInfo)
+                : base(versionInfo, ReadingsModule.GetEmbedColor)
             {
                 _scheduleService = scheduleService;
                 _guildService = guildService;
@@ -179,10 +180,7 @@ namespace ReadingsBot.Modules
             {
                 var blogList = _blogService.GetBlogList();
 
-                var builder = new EmbedBuilder()
-                {
-                    Color = _color,
-                };
+                var builder = BasicEmbedBuilder;
 
                 if (blogList is null || blogList.Count == 0)
                 {

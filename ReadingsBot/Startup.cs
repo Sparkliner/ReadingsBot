@@ -84,7 +84,8 @@ namespace ReadingsBot
             .AddSingleton<OcaLivesCacheService>()
             .AddSingleton<ReadingsPostingService>()
             .AddSingleton<SchedulingService>()
-            .AddSingleton<ScheduleRunnerService>();
+            .AddSingleton<ScheduleRunnerService>()
+            .AddSingleton<ReadingsBotVersionInfo>();
         }
     }
 }

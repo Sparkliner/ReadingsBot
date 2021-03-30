@@ -9,23 +9,20 @@ using System.Threading.Tasks;
 namespace ReadingsBot.Modules
 {
     [Name("Help")]
-    public class HelpModule : ModuleBase<SocketCommandContext>
+    public class HelpModule : InfoEmbedModule
     {
         private readonly CommandService _commands;
         private readonly GuildService _guildService;
 
-        private static readonly Color _color = new Color(114, 137, 218);
-
-        public HelpModule(CommandService commands, GuildService guildService)
+        public HelpModule(CommandService commands, GuildService guildService, ReadingsBotVersionInfo versionInfo)
+            : base(versionInfo, new Color(114, 137, 218))
         {
             _commands = commands;
             _guildService = guildService;
         }
 
-        public static Color GetColor()
-        {
-            return _color;
-        }
+        //I really don't like to repeat myself here. If I can come up with a nice place to store a publically accessible color config per module, that would be great
+        public static Color GetEmbedColor { get; } = new(114, 137, 218);
 
         [Command("help")]
         [Summary("Get a list of all commands.")]
@@ -33,15 +30,12 @@ namespace ReadingsBot.Modules
         public async Task HelpAsync()
         {
             string prefix = await _guildService.GetGuildPrefix(Context.Guild.Id);
-            var builder = new EmbedBuilder()
-            {
-                Color = _color,
-                Description = "These are the commands you can use"
-            };
+            var builder = BasicEmbedBuilder.WithDescription("These are the commands you can use");
+
 
             foreach (var module in _commands.Modules.OrderBy(module => module.Name))
             {
-                StringBuilder description = new StringBuilder();
+                StringBuilder description = new();
 
                 List<CommandInfo> commands = module.Commands.OrderBy(c => c.Aliases[0])
                     .Distinct(new CommandInfoEqualityComparer())
@@ -83,11 +77,7 @@ namespace ReadingsBot.Modules
                 return;
             }
 
-            var builder = new EmbedBuilder()
-            {
-                Color = _color,
-                Description = $"Here are some commands like **{command}**"
-            };
+            var builder = BasicEmbedBuilder.WithDescription($"Here are some commands like **{command}**");
 
             foreach (var match in result.Commands)
             {

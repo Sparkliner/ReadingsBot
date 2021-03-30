@@ -15,15 +15,18 @@ namespace ReadingsBot.Modules
 {
     [Name("Admin")]
     [Summary("Administrative commands.")]
-    public class AdminModule : ModuleBase<SocketCommandContext>
+    public class AdminModule : ColorModule
     {
-        private static readonly Color _color = new Color(216, 112, 135);
         private readonly GuildService _guildService;
 
         public AdminModule(GuildService guildService)
+            : base(new Color(216, 112, 135))
         {
             _guildService = guildService;
         }
+
+        //not a fan of this solution
+        static Color GetEmbedColor => new Color(216, 112, 135);
 
         [Command("setprefix")]
         [RequireUserPermission(GuildPermission.Administrator, Group = "Permission")]
@@ -44,11 +47,12 @@ namespace ReadingsBot.Modules
         [Name("Time Zones")]
         [Group("timezone")]
         [Summary("Commands dealing with time zones.")]
-        public class TimeZoneModule : ModuleBase<SocketCommandContext>
+        public class TimeZoneModule : InfoEmbedModule
         {
             private readonly GuildService _guildService;
 
-            public TimeZoneModule(GuildService guildService)
+            public TimeZoneModule(GuildService guildService, ReadingsBotVersionInfo versionInfo)
+                : base(versionInfo, AdminModule.GetEmbedColor)
             {
                 _guildService = guildService;
             }
@@ -107,8 +111,7 @@ namespace ReadingsBot.Modules
                 IDictionary<string, string> timezones = TZNames.GetDisplayNames("en-US", useIanaZoneIds: true);
                 var timezonesPerPage = 20;
                 await Context.SendPaginatedConfirmAsync(page,
-                    (curPage) => new EmbedBuilder()
-                    .WithColor(_color)
+                    (curPage) => BasicEmbedBuilder
                     .WithTitle("Valid Time Zone Names")
                     .WithDescription(string.Join("\n", timezones
                         .Skip(curPage * timezonesPerPage)
@@ -121,12 +124,13 @@ namespace ReadingsBot.Modules
         [Name("Readings")]
         [Group("readings")]
         [Summary("Commands to manage scheduled readings.")]
-        public class ScheduleModule : ModuleBase<SocketCommandContext>
+        public class ScheduleModule : InfoEmbedModule
         {
             private readonly DiscordSocketClient _client;
             private readonly SchedulingService _scheduleService;
 
-            public ScheduleModule(DiscordSocketClient client, SchedulingService scheduleService)
+            public ScheduleModule(DiscordSocketClient client, SchedulingService scheduleService, ReadingsBotVersionInfo versionInfo)
+                : base(versionInfo, AdminModule.GetEmbedColor)
             {
                 _client = client;
                 _scheduleService = scheduleService;
@@ -142,10 +146,7 @@ namespace ReadingsBot.Modules
                     .OrderBy(g => g.Key);
 
 
-                var builder = new EmbedBuilder()
-                {
-                    Color = _color,
-                };
+                var builder = BasicEmbedBuilder;
 
                 if (eventGroups is null || !eventGroups.Any())
                 {
