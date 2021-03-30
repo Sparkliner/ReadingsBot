@@ -137,7 +137,9 @@ namespace ReadingsBot.Modules
             [Summary("Shows all scheduled readings.")]
             public async Task Show()
             {
-                List<Data.ScheduledEvent> events = await _scheduleService.GetGuildEventsAsync(Context.Guild.Id);
+                var eventGroups = (await _scheduleService.GetGuildEventsAsync(Context.Guild.Id))
+                    .GroupBy(evt => evt.EventInfo.Description)
+                    .OrderBy(g => g.Key);
 
 
                 var builder = new EmbedBuilder()
@@ -145,7 +147,7 @@ namespace ReadingsBot.Modules
                     Color = _color,
                 };
 
-                if (events is null || events.Count == 0)
+                if (eventGroups is null || !eventGroups.Any())
                 {
                     builder.WithDescription($"There are no scheduled readings for {Context.Guild.Name}");
                 }
@@ -153,15 +155,14 @@ namespace ReadingsBot.Modules
                 {
                     builder.WithDescription($"Here are the scheduled readings for {Context.Guild.Name}");
 
-                    foreach (Data.ScheduledEvent scheduledEvent in events)
+                    foreach (var eventType in eventGroups)
                     {
                         builder.AddField(x =>
                         {
-                            x.Name = scheduledEvent.EventInfo.Description;
-                            x.Value = EventToString(scheduledEvent);
+                            x.Name = eventType.Key;
+                            x.Value = String.Join("\n", eventType.OrderBy(evt => _client.GetChannel(evt.ChannelId).ToString()).Select(evt => $"{EventToString(evt)}"));
                             x.IsInline = false;
-                        }
-                        );
+                        });
                     }
                 }
 
