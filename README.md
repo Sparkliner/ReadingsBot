@@ -16,9 +16,11 @@ If you wish to make your own version of ReadingsBot, you will have to modify the
 # Dependencies
 All the dependencies can be installed using the Nuget Package Manager.
 - Discord.NET
+- HtmlAgilityPack
 - Microsoft.Extensions.Configuration
 - Microsoft.Extensions.Configuration.EnvironmentVariables
 - Microsoft.Extensions.DependencyInjection
 - MongoDB.Driver
 - NodaTime
+- NodaTime.Serialization.SystemTextJson
 - TimeZoneNames
