@@ -29,10 +29,13 @@ namespace ReadingsBot
             ImageCacheDirectory = string.Join("/", _config["data_directory"], "cache/OCA/images");
         }
 
-        public async Task<Data.OcaLives> GetLivesAsync()
+        public Data.OcaLives GetLives()
         {
             //test that cache exists and is up to date
-            await UpdateCacheAsync();
+            lock (CacheLock)
+            {
+                UpdateCacheAsync().Wait();
+            }
             return LocalCache;
         }
 

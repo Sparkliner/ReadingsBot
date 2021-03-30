@@ -22,6 +22,8 @@ namespace ReadingsBot
 
         protected T LocalCache;
 
+        protected readonly object CacheLock = new object();
+
         protected JsonCacheService(IConfigurationRoot config, IClock clock, string cacheDir, string cacheFile, JsonSerializerOptions options, DateTimeZone timeZone)
         {
             _config = config;
@@ -47,6 +49,7 @@ namespace ReadingsBot
                 else
                 {
                     await UpdateCacheWebAsync();
+                    UpdateCacheDate();
                     return;
                 }
             }
@@ -54,9 +57,8 @@ namespace ReadingsBot
             {
                 LogUtilities.WriteLog(LogSeverity.Verbose, "Cache is out of date");
                 await UpdateCacheWebAsync();
+                UpdateCacheDate();
             }
-
-            UpdateCacheDate();
         }
 
         protected abstract bool IsCacheOutOfDate();

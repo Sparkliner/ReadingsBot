@@ -26,13 +26,13 @@ namespace ReadingsBot
         {
             await PostBulkEmbedAsync(
                 Modules.ReadingsModule.GetColor(),
-                (await _ocaLives.GetLivesAsync()).GetEmbeds(),
+                (_ocaLives.GetLives()).GetEmbeds(),
                 channelId);
         }
 
         public async Task<List<BlogSubscription>> PostBlogsAsync(ulong channelId, BlogsReadingInfo blogsReading = null)
         {
-            var (embeds, newSubs) = await _blogs.GetLatestBlogPostEmbedsAsync(blogsReading);
+            (List<EmbedBuilder> embeds, List<BlogSubscription> newSubs) = _blogs.GetLatestBlogPostEmbeds(blogsReading);
             await PostBulkEmbedAsync(
                 Modules.ReadingsModule.GetColor(),
                 embeds,

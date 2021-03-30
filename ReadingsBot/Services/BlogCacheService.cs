@@ -78,9 +78,12 @@ namespace ReadingsBot
             return _allBlogs;
         }
 
-        public async Task<(List<EmbedBuilder> embeds, List<BlogSubscription> newSubs)> GetLatestBlogPostEmbedsAsync(BlogsReadingInfo blogsReading = null)
+        public (List<EmbedBuilder> embeds, List<BlogSubscription> newSubs) GetLatestBlogPostEmbeds(BlogsReadingInfo blogsReading = null)
         {
-            await UpdateCacheAsync();
+            lock (CacheLock)
+            {
+                UpdateCacheAsync().Wait();
+            }
             if (blogsReading is null)
             {
                 var embeds = LocalCache.Cache.Values
@@ -106,7 +109,7 @@ namespace ReadingsBot
                             g.Key,
                             g.OrderByDescending(a => a.newPost.PostDateTime)
                                 .First().newPost.PId));
-                return (embeds.ToList(), newSubs.ToList());
+                return (embeds.ToList(), newSubs.Any() ? newSubs.ToList() : blogsReading.Subscriptions);
             }
         }
 
@@ -132,7 +135,6 @@ namespace ReadingsBot
                         blogInfo => blogInfo.BlogName,
                         (item, blogInfo) =>
                             item);
-
                 foreach (var blogItem in blogItems)
                 {
                     string blogName = blogItem.Element("category").Value;
@@ -155,7 +157,7 @@ namespace ReadingsBot
                     if (blogImageUrl is null)
                     {
                         //try to get from meta tag
-                        blogImageUrl = await TryGetImageFromPageAsync(blogLink);
+                        blogImageUrl = TryGetImageFromPageAsync(blogLink).Result;
                     }
                     BlogPost blogPost = new BlogPost(
                         blogName: blogName,
