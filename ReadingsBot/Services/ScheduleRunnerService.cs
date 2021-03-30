@@ -14,7 +14,8 @@ namespace ReadingsBot
         private readonly SchedulingService _schedulingService;
         private readonly ReadingsPostingService _readingsPoster;
 
-        private Thread ScheduleRunnerThread;
+        private Task ScheduleRunnerTask;
+        private CancellationTokenSource cancellationToken;
 
         public ScheduleRunnerService(DiscordSocketClient client, SchedulingService schedulingService, ReadingsPostingService bulkPoster)
         {
@@ -27,68 +28,64 @@ namespace ReadingsBot
 
         public Task Initialize()
         {
-            return Task.Run(() =>
+            if (ScheduleRunnerTask is null || ScheduleRunnerTask.IsCanceled || ScheduleRunnerTask.IsFaulted)
             {
-                if (ScheduleRunnerThread is null || !ScheduleRunnerThread.IsAlive)
-                {
-                    ScheduleRunnerThread = new Thread(ScheduleRunnerThread_Func)
-                    {
-                        IsBackground = true
-                    };
-                    ScheduleRunnerThread.Start();
-                }
-            });
+                cancellationToken = new CancellationTokenSource();
+                ScheduleRunnerTask = Task.Run(async () => await ScheduleRunnerAsync());
+            }
+            
+            return Task.CompletedTask;
         }
 
-        private void ScheduleRunnerThread_Func()
+        private async Task ScheduleRunnerAsync()
         {
             LogUtilities.WriteLog(LogSeverity.Verbose, "Schedule Thread Started");
             while (true) //since thread is background this should be ok now
             {
                 if (_client.ConnectionState != ConnectionState.Connected)
                 {
-                    Thread.Sleep(1000);
+                    await Task.Delay(1000, cancellationToken.Token);
                     continue;
                 }
                 LogUtilities.WriteLog(LogSeverity.Verbose, "Polling event schedule");
+                
+                List<Data.ScheduledEvent> currentEvents = await _schedulingService.GetCurrentEventsAsync();
 
-                var eventresult = _schedulingService.GetCurrentEventsAsync();
-                eventresult.Wait();
-                List<Data.ScheduledEvent> currentEvents = eventresult.Result;
                 if (!(currentEvents is null) && currentEvents.Any())
                 {
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"Found {currentEvents.Count} events");
-                    List<Thread> ts = new List<Thread>();
+                    List<Task> ts = new List<Task>();
                     foreach (Data.ScheduledEvent scheduledEvent in currentEvents)
                     {
-                        ts.Add(new Thread(() =>
+                        Task nextTask;
+                        switch (scheduledEvent.EventInfo)
                         {
-                            switch (scheduledEvent.EventInfo)
-                            {
-                                case SaintsLivesReadingInfo:
-                                    _readingsPoster.PostLivesAsync(scheduledEvent.ChannelId).Wait();
-                                    break;
-                                case BlogsReadingInfo blogsReading:
-                                    var blogsTask = _readingsPoster.PostBlogsAsync(scheduledEvent.ChannelId, blogsReading);
-                                    //get new subs from result and update blog subscriptions
-                                    var newSubs = blogsTask.Result;
-                                    ((BlogsReadingInfo)scheduledEvent.EventInfo).Subscriptions = newSubs;
-                                    break;
-                            }
-                            _schedulingService.UpdateEventDataAsync(scheduledEvent).Wait();
-                        }));
+                            case SaintsLivesReadingInfo:
+                                nextTask = _readingsPoster.PostLivesAsync(scheduledEvent.ChannelId);
+                                break;
+                            case BlogsReadingInfo blogsReading:
+                                var blogsTask = _readingsPoster.PostBlogsAsync(scheduledEvent.ChannelId, blogsReading);
+                                //get new subs from result and update blog subscriptions
+                                nextTask = blogsTask.ContinueWith(previousTask => 
+                                    ((BlogsReadingInfo)scheduledEvent.EventInfo).Subscriptions = previousTask.Result);
+                                break;
+                            default:
+                                nextTask = default;
+                                break;
+                        }
+                        if (nextTask != default)
+                        {
+                            ts.Add(nextTask.ContinueWith(previousTask => _schedulingService.UpdateEventDataAsync(scheduledEvent)));
+                        }
                     }
-                    foreach (Thread t in ts)
-                    {
-                        t.Start();
-                    }
+                    await Task.WhenAll(ts.ToArray());
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"Executed all events");
                 }
                 else
                 {
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"No current events found");
                 }
-                Thread.Sleep(1 * 60 * 1000); //sleep for a minute
+                await Task.Delay(1 * 60 * 1000, cancellationToken.Token); //sleep for a minute
             }
         }
     }
