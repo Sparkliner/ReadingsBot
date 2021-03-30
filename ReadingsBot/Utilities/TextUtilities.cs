@@ -1,43 +1,44 @@
-﻿using NodaTime;
+﻿using HtmlAgilityPack;
+using NodaTime;
 using NodaTime.Text;
-using NodaTime.TimeZones;
 using System;
-using System.Linq;
-using System.Web;
-using System.Globalization;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Net;
+using System.Text;
 using TimeZoneNames;
 
 namespace ReadingsBot.Utilities
 {
     public static class TextUtilities
     {
-        private readonly static CompositePatternBuilder<LocalTime> patternBuilder = new CompositePatternBuilder<LocalTime>();
 
-        private readonly static IPattern<LocalTime> localTimePattern;
+        private readonly static IPattern<LocalTime> localTimePattern = InitializeTimePattern();
 
-        private readonly static List<(string pattern,Func<LocalTime,Boolean> predicate)> patterns = new List<(string, Func<LocalTime, bool>)>
+        private static IPattern<LocalTime> InitializeTimePattern()
         {
-            ( "HH':'mm", _ => true ),
-            ( "hh':'mm tt", _ => true ),
-            ( "hh':'mmtt", _ => false ),
-            ( "hh':'mm t", _ => true ),
-            ( "hh':'mmt", _ => false ),
-            ( "H':'mm", _ => true ),
-            ( "HH", _ => false ),
-            ( "h':'mm tt", _ => true ),
-            ( "h':'mmtt", _ => false ),
-            ( "h':'mm t", _ => true ),
-            ( "h':'mmt", _ => false ),
-            ( "%H", _ => false ),
-            ( "h tt", _ => false ),
-            ( "htt", _ => false ),
-            ( "h t", _ => false ),
-            ( "ht", _ => false )
-        };
+            List<(string pattern, Func<LocalTime, Boolean> predicate)> patterns = new List<(string, Func<LocalTime, bool>)>
+            {
+                ( "HH':'mm", _ => true ),
+                ( "hh':'mm tt", _ => true ),
+                ( "hh':'mmtt", _ => false ),
+                ( "hh':'mm t", _ => true ),
+                ( "hh':'mmt", _ => false ),
+                ( "H':'mm", _ => true ),
+                ( "HH", _ => false ),
+                ( "h':'mm tt", _ => true ),
+                ( "h':'mmtt", _ => false ),
+                ( "h':'mm t", _ => true ),
+                ( "h':'mmt", _ => false ),
+                ( "%H", _ => false ),
+                ( "h tt", _ => false ),
+                ( "htt", _ => false ),
+                ( "h t", _ => false ),
+                ( "ht", _ => false )
+            };
 
-        static TextUtilities()
-        {
+            CompositePatternBuilder<LocalTime> patternBuilder = new CompositePatternBuilder<LocalTime>();
             foreach ((string pattern, Func<LocalTime, Boolean> predicate) in patterns)
             {
                 patternBuilder.Add(LocalTimePattern.Create(
@@ -45,7 +46,7 @@ namespace ReadingsBot.Utilities
                     new LocalTime(0, 0)), predicate);
             }
 
-            localTimePattern = patternBuilder.Build();
+            return patternBuilder.Build();
         }
 
         public static DateTimeZone ParseTimeZone(string input)
@@ -63,13 +64,34 @@ namespace ReadingsBot.Utilities
 
         public static string ParseWebText(string input)
         {
-            return HttpUtility.HtmlDecode(input.Replace("<p>",""));
+            input = WebUtility.HtmlDecode(input);
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(input);
+            StringBuilder output = new StringBuilder();
+            foreach (HtmlNode node in doc.DocumentNode.ChildNodes)
+            {
+                if (node.Name.Equals("a"))
+                {
+                    string linkText = node.InnerText;
+                    if (string.IsNullOrWhiteSpace(linkText))
+                    {
+                        linkText = "Read more";
+                    }
+                    output.Append($" [{linkText}]({node.GetAttributeValue("href", "about:blank")})");
+                }
+                else if (node.Name.Equals("p"))
+                {
+                    output.Append("\n" + ParseWebText(node.InnerHtml));
+                }
+                else
+                {
+                    output.Append(node.InnerText);
+                }
+
+            }
+            return output.ToString();
         }
 
-        //public static ZonedDateTime NodaParseTime(string input, out string timeZone)
-        //{
-        //    var pattern = ZonedDateTimePattern.Create("H:mm")
-        //}
         public static LocalTime ParseLocalTime(string input, out DateTimeZone timeZone)
         {
             List<String> tokens = input.Trim().Split("-t").ToList();
@@ -93,7 +115,7 @@ namespace ReadingsBot.Utilities
                 timeZone = null;
             }
 
-            ParseResult<LocalTime>  parseResult = localTimePattern.Parse(tokens[0].Trim());
+            ParseResult<LocalTime> parseResult = localTimePattern.Parse(tokens[0].Trim());
 
             if (!parseResult.Success)
             {

@@ -26,11 +26,11 @@ namespace ReadingsBot.Extensions
             this.Serialize(context, period);
         }
 
-        void IBsonSerializer<Period>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, Period period)
+        void IBsonSerializer<Period>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, Period value)
         {
             context.Writer.WriteString(
                 PeriodPattern.Roundtrip
-                .Format(period)) ;
+                .Format(value));
         }
 
         public Period Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)

@@ -5,6 +5,7 @@
 
 cache/
 publish*/
+config/
 
 OCALives.cs
 
