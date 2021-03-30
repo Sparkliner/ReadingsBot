@@ -91,9 +91,15 @@ namespace ReadingsBot
             }
             else
             {
-                LocalDateTime nextLocalEventDateTime = scheduledEvent.GetLocalDateTime().Plus(scheduledEvent.EventPeriod);
-                ZonedDateTime nextEventTime = nextLocalEventDateTime.InZoneStrictly(scheduledEvent.GetTimeZone());
-                Instant nextEventInstant = nextEventTime.ToInstant();
+                Instant nextEventInstant = default;
+                Instant now = _clock.GetCurrentInstant();
+                LocalDateTime nextLocalEventDateTime = scheduledEvent.GetLocalDateTime();
+                //fast-forward event time
+                while (nextEventInstant <= now)
+                {
+                    nextLocalEventDateTime = nextLocalEventDateTime.Plus(scheduledEvent.EventPeriod);
+                    nextEventInstant = nextLocalEventDateTime.InZoneStrictly(scheduledEvent.GetTimeZone()).ToInstant();
+                }
 
                 var builder = Builders<Data.ScheduledEvent>.Filter;
                 var filter = builder.Eq("Id", scheduledEvent.Id);
