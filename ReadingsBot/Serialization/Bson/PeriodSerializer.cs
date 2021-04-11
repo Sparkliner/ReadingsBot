@@ -4,12 +4,12 @@ using NodaTime;
 using NodaTime.Text;
 using System;
 
-namespace ReadingsBot.Extensions
+namespace ReadingsBot.Serialization.Bson
 {
-    class LocalTimeSerializer : IBsonSerializer<LocalTime>
+    class PeriodSerializer : IBsonSerializer<Period>
     {
-        public Type ValueType => typeof(LocalTime);
-        public static LocalTimeSerializer Instance { get; } = new LocalTimeSerializer();
+        public Type ValueType => typeof(Period);
+        public static PeriodSerializer Instance { get; } = new PeriodSerializer();
 
         object IBsonSerializer.Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
@@ -21,31 +21,31 @@ namespace ReadingsBot.Extensions
             if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            var localTime = (LocalTime)value;
+            var period = (Period)value;
 
-            this.Serialize(context, localTime);
+            this.Serialize(context, period);
         }
 
-        void IBsonSerializer<LocalTime>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, LocalTime value)
+        void IBsonSerializer<Period>.Serialize(BsonSerializationContext context, BsonSerializationArgs args, Period value)
         {
             context.Writer.WriteString(
-                LocalTimePattern.CreateWithInvariantCulture("t")
+                PeriodPattern.Roundtrip
                 .Format(value));
         }
 
-        public LocalTime Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
+        public Period Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
             var bsonType = context.Reader.GetCurrentBsonType();
 
             if (bsonType != BsonType.String)
             {
-                throw new InvalidOperationException($"Cannot deserialize LocalTime from BsonType {bsonType}");
+                throw new InvalidOperationException($"Cannot deserialize Period from BsonType {bsonType}");
             }
 
-            string localTimeString = context.Reader.ReadString();
-            var parseResult = LocalTimePattern
-                .CreateWithInvariantCulture("t")
-                .Parse(localTimeString);
+            string periodString = context.Reader.ReadString();
+            var parseResult = PeriodPattern
+                .Roundtrip
+                .Parse(periodString);
 
             if (!parseResult.Success)
             {

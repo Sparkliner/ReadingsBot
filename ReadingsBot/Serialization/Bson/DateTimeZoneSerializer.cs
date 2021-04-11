@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization;
 using NodaTime;
 using System;
 
-namespace ReadingsBot.Extensions
+namespace ReadingsBot.Serialization.Bson
 {
     class DateTimeZoneSerializer : IBsonSerializer<DateTimeZone>
     {

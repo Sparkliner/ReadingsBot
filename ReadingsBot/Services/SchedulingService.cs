@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using NodaTime;
 using ReadingsBot.Data;
-using ReadingsBot.Extensions;
+using ReadingsBot.Serialization.Bson;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

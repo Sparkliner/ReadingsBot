@@ -4,7 +4,7 @@ using NodaTime;
 using NodaTime.Text;
 using System;
 
-namespace ReadingsBot.Extensions
+namespace ReadingsBot.Serialization.Bson
 {
     class ZonedDateTimeSerializer : IBsonSerializer<ZonedDateTime>
     {
