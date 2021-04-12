@@ -54,7 +54,7 @@ namespace ReadingsBot
                 if (!(currentEvents is null) && currentEvents.Any())
                 {
                     LogUtilities.WriteLog(LogSeverity.Verbose, $"Found {currentEvents.Count} events");
-                    List<Task> ts = new List<Task>();
+                    List<Task> ts = new();
                     foreach (Data.ScheduledEvent scheduledEvent in currentEvents)
                     {
                         Task nextTask;

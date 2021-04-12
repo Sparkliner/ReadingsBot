@@ -17,7 +17,7 @@ namespace ReadingsBot.Modules
     [Summary("Administrative commands.")]
     public class AdminModule : ModuleBase<SocketCommandContext>
     {
-        private static readonly Color _color = new Color(216, 112, 135);
+        private static readonly Color _color = new(216, 112, 135);
         private readonly GuildService _guildService;
 
         public AdminModule(GuildService guildService)

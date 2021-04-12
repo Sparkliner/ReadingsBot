@@ -50,7 +50,7 @@ namespace ReadingsBot
 
                 string blogAuthor = blogInfo.GetProperty("Author").GetString();
 
-                List<string> blogAliases = new List<string>();
+                List<string> blogAliases = new();
                 foreach (JsonElement alias in blogInfo.GetProperty("Aliases").EnumerateArray())
                 {
                     blogAliases.Add(alias.GetString());
@@ -159,7 +159,7 @@ namespace ReadingsBot
                         //try to get from meta tag
                         blogImageUrl = TryGetImageFromPageAsync(blogLink).Result;
                     }
-                    BlogPost blogPost = new BlogPost(
+                    BlogPost blogPost = new(
                         blogName: blogName,
                         author: blogItem.Element(blogItem.GetNamespaceOfPrefix("dc") + "creator").Value,
                         postTitle: blogItem.Element("title").Value,
@@ -197,7 +197,7 @@ namespace ReadingsBot
             //hardcoding this might be a bad idea some day
             string source = Encoding.UTF8.GetString(await blogContent.ReadAsByteArrayAsync());
             source = WebUtility.HtmlDecode(source);
-            HtmlDocument blogDocument = new HtmlDocument();
+            HtmlDocument blogDocument = new();
             blogDocument.LoadHtml(source);
             return blogDocument
                 .DocumentNode

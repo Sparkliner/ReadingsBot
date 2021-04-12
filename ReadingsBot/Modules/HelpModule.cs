@@ -14,7 +14,7 @@ namespace ReadingsBot.Modules
         private readonly CommandService _commands;
         private readonly GuildService _guildService;
 
-        private static readonly Color _color = new Color(114, 137, 218);
+        private static readonly Color _color = new(114, 137, 218);
 
         public HelpModule(CommandService commands, GuildService guildService)
         {
@@ -41,7 +41,7 @@ namespace ReadingsBot.Modules
 
             foreach (var module in _commands.Modules.OrderBy(module => module.Name))
             {
-                StringBuilder description = new StringBuilder();
+                StringBuilder description = new();
 
                 List<CommandInfo> commands = module.Commands.OrderBy(c => c.Aliases[0])
                     .Distinct(new CommandInfoEqualityComparer())

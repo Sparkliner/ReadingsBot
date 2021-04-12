@@ -22,7 +22,7 @@ namespace ReadingsBot
 
         protected T LocalCache;
 
-        protected readonly object CacheLock = new object();
+        protected readonly object CacheLock = new();
 
         protected JsonCacheService(IConfigurationRoot config, IClock clock, string cacheDir, string cacheFile, JsonSerializerOptions options, DateTimeZone timeZone)
         {

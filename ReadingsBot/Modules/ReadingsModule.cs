@@ -16,7 +16,7 @@ namespace ReadingsBot.Modules
     public class ReadingsModule : ModuleBase<SocketCommandContext>
     {
 
-        private static readonly Color _color = new Color(135, 216, 112);
+        private static readonly Color _color = new(135, 216, 112);
 
         public static Color GetColor()
         {
@@ -69,7 +69,7 @@ namespace ReadingsBot.Modules
                     timeZone = await _guildService.GetGuildTimeZone(Context.Guild.Id);
                 }
 
-                ZonedClock zc = new ZonedClock(_clock, timeZone, CalendarSystem.Iso);
+                ZonedClock zc = new(_clock, timeZone, CalendarSystem.Iso);
                 LocalDateTime localEventDateTime = zc.GetCurrentDate() + localEventTime;
                 //if the chosen time is already past today, set it for tomorrow instead
                 if (localEventDateTime < zc.GetCurrentLocalDateTime())
@@ -235,7 +235,7 @@ namespace ReadingsBot.Modules
                     {
                         DateTimeZone timeZone = await _guildService.GetGuildTimeZone(Context.Guild.Id);
 
-                        ZonedClock zc = new ZonedClock(_clock, timeZone, CalendarSystem.Iso);
+                        ZonedClock zc = new(_clock, timeZone, CalendarSystem.Iso);
                         LocalDateTime localEventDateTime = zc.GetCurrentLocalDateTime();
                         localEventDateTime = localEventDateTime.With(TimeAdjusters.TruncateToHour);
 

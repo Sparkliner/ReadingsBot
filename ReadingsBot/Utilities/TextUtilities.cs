@@ -18,7 +18,7 @@ namespace ReadingsBot.Utilities
 
         private static IPattern<LocalTime> InitializeTimePattern()
         {
-            List<(string pattern, Func<LocalTime, Boolean> predicate)> patterns = new List<(string, Func<LocalTime, bool>)>
+            List<(string pattern, Func<LocalTime, Boolean> predicate)> patterns = new()
             {
                 ( "HH':'mm", _ => true ),
                 ( "hh':'mm tt", _ => true ),
@@ -38,7 +38,7 @@ namespace ReadingsBot.Utilities
                 ( "ht", _ => false )
             };
 
-            CompositePatternBuilder<LocalTime> patternBuilder = new CompositePatternBuilder<LocalTime>();
+            CompositePatternBuilder<LocalTime> patternBuilder = new();
             foreach ((string pattern, Func<LocalTime, Boolean> predicate) in patterns)
             {
                 patternBuilder.Add(LocalTimePattern.Create(
@@ -65,9 +65,9 @@ namespace ReadingsBot.Utilities
         public static string ParseWebText(string input)
         {
             input = WebUtility.HtmlDecode(input);
-            HtmlDocument doc = new HtmlDocument();
+            HtmlDocument doc = new();
             doc.LoadHtml(input);
-            StringBuilder output = new StringBuilder();
+            StringBuilder output = new();
             foreach (HtmlNode node in doc.DocumentNode.ChildNodes)
             {
                 if (node.Name.Equals("a"))
