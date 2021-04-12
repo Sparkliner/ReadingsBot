@@ -56,9 +56,9 @@ namespace ReadingsBot
             if (!Directory.Exists(ImageCacheDirectory))
                 Directory.CreateDirectory(ImageCacheDirectory);
             int i = 0;
-            foreach (Data.OcaLife life in LocalCache.commemorations)
+            foreach (Data.ISaintsLife life in LocalCache.Commemorations)
             {
-                string url = life.image;
+                string url = life.ImageUrl;
                 if (!string.IsNullOrWhiteSpace(url))
                 {
                     string imageFile = String.Join("/", ImageCacheDirectory, $"image_{i}.jpg");
@@ -72,7 +72,7 @@ namespace ReadingsBot
                     await inStream.CopyToAsync(fileStream);
 
                     //update this in our class structure as well
-                    life.image = imageFile;
+                    life.ImageUrl = imageFile;
                     ++i;
                 }
             }
@@ -82,7 +82,7 @@ namespace ReadingsBot
         {
             if (Directory.Exists(ImageCacheDirectory))
             {
-                System.IO.DirectoryInfo di = new DirectoryInfo(ImageCacheDirectory);
+                System.IO.DirectoryInfo di = new(ImageCacheDirectory);
                 foreach (FileInfo file in di.EnumerateFiles())
                 {
                     file.Delete();
@@ -101,7 +101,7 @@ namespace ReadingsBot
         {
             CacheLastUpdatedTime = OffsetDateTimePattern
                 .CreateWithInvariantCulture("ddd, dd MMM uuuu HH:mm:ss o<M>")
-                .Parse(LocalCache.date_rfc).Value
+                .Parse(LocalCache.DateWithOffset).Value
                 .LocalDateTime;
         }
 
