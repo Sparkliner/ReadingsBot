@@ -44,7 +44,9 @@ namespace ReadingsBot.Extensions
 
             await Task.Delay(2000).ConfigureAwait(false);
 
-            DateTime lastPageChange = default(DateTime);
+#pragma warning disable S1854 // Unused assignments should be removed
+            DateTime lastPageChange = default;
+#pragma warning restore S1854 // Unused assignments should be removed
 
             async Task changePage(SocketReaction r)
             {
