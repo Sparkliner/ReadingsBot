@@ -11,14 +11,16 @@ namespace ReadingsBot
     {
         private readonly DiscordSocketClient _client;
         private readonly OcaLivesCacheService _ocaLives;
+        private readonly JulianLivesCacheService _julianLives;
         private readonly BlogCacheService _blogs;
 
         private readonly int _postingDelay = 1500;
 
-        public ReadingsPostingService(DiscordSocketClient client, OcaLivesCacheService ocaLives, BlogCacheService blogs)
+        public ReadingsPostingService(DiscordSocketClient client, OcaLivesCacheService ocaLives, JulianLivesCacheService julianLives, BlogCacheService blogs)
         {
             _client = client;
             _ocaLives = ocaLives;
+            _julianLives = julianLives;
             _blogs = blogs;
         }
 
@@ -26,7 +28,7 @@ namespace ReadingsBot
         {
             await PostBulkEmbedAsync(
                 Modules.ReadingsModule.GetColor(),
-                (_ocaLives.GetLives()).GetEmbeds(),
+                (_julianLives.GetLives()),
                 channelId);
         }
 

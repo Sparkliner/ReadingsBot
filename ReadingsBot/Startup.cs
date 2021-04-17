@@ -82,6 +82,7 @@ namespace ReadingsBot
             .AddSingleton<IClock>(SystemClock.Instance)
             .AddSingleton<GuildService>()
             .AddSingleton<OcaLivesCacheService>()
+            .AddSingleton<JulianLivesCacheService>()
             .AddSingleton<ReadingsPostingService>()
             .AddSingleton<SchedulingService>()
             .AddSingleton<ScheduleRunnerService>();

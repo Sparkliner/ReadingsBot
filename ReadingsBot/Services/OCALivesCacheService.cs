@@ -7,10 +7,12 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ReadingsBot.Data;
+using System.Collections.Generic;
 
 namespace ReadingsBot
 {
-    public class OcaLivesCacheService : JsonCacheService<Data.OcaLives>
+    public class OcaLivesCacheService : JsonCacheService<OcaLives>, ILivesCacheService
     {
         private readonly HttpClient _httpClient;
 
@@ -29,14 +31,14 @@ namespace ReadingsBot
             ImageCacheDirectory = string.Join("/", _config["data_directory"], "cache/OCA/images");
         }
 
-        public Data.OcaLives GetLives()
+        public List<EmbedWithImage> GetLives()
         {
             //test that cache exists and is up to date
             lock (CacheLock)
             {
                 UpdateCacheAsync().Wait();
             }
-            return LocalCache;
+            return LocalCache.GetEmbeds();
         }
 
         protected override async Task UpdateCacheWebAsync()
@@ -56,12 +58,12 @@ namespace ReadingsBot
             if (!Directory.Exists(ImageCacheDirectory))
                 Directory.CreateDirectory(ImageCacheDirectory);
             int i = 0;
-            foreach (Data.ISaintsLife life in LocalCache.Commemorations)
+            foreach (ISaintsLife life in LocalCache.Commemorations)
             {
                 string url = life.ImageUrl;
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    string imageFile = String.Join("/", ImageCacheDirectory, $"image_{i}.jpg");
+                    string imageFile = string.Join("/", ImageCacheDirectory, $"image_{i}.jpg");
 
                     using HttpResponseMessage response = await _httpClient.GetAsync(url);
                     response.EnsureSuccessStatusCode();
@@ -113,7 +115,7 @@ namespace ReadingsBot
             using HttpResponseMessage response = await _httpClient.GetAsync(_config["oca_uri"]);
             response.EnsureSuccessStatusCode();
 
-            using var content = response.Content;
+            using var content = response.Content;//LoadToCache(json_string);
             return await response.Content.ReadAsStringAsync();
         }
     }
