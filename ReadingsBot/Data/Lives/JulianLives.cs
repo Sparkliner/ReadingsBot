@@ -72,8 +72,7 @@ namespace ReadingsBot.Data
                 Title = Utilities.TextUtilities.ParseWebText(Name),
                 Url = Link,
             }
-            .AddField(
-                "\u200b",
+            .WithDescription(
                 (life_text.Length <= 128 ? life_text : life_text.Substring(0, 128) + $"...[Read more]({Link})"))
             .WithFooter(footer => footer.Text = Utilities.TextUtilities.ParseWebText("&copy; 1996-2001 by translator Fr. S. Janos.\nWith permission from Holy Trinity Russian Orthodox Church."));
             //just going to hardcode the copyright because I can't be bothered right now
